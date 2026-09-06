@@ -14,6 +14,7 @@ scripts/                          アカウント配布用のビルドと、push
 
 スキルの所属はフォルダ構造ではなく `marketplace.json` の `skills` 配列で決まる。
 束ね方を変えたいときは JSON を直すだけでよく、ファイルは動かさない。
+ただし marketplace 経由で Mac に入れた場合、この絞り込みが現状効いていない（→ 未解決）。
 
 | プラグイン | 中身 | 配布先 |
 |---|---|---|
@@ -141,6 +142,36 @@ claude plugin install git-flow@yike-skills
 
 claude.ai アカウントへ配るスキルを触ったなら、`make build` して
 `dist/studio.plugin` を上げ直す。
+
+## 未解決: marketplace 経由だと担当が分かれない
+
+`marketplace.json` は `studio` に 4 本、`git-flow` に 5 本を割り当てている。
+ところが Mac に入った `studio` には 9 本すべてが入っていて、
+`studio:git-commit` と `git-flow:git-commit` が同時に並ぶ。
+
+**アカウント配布は影響を受けない。** `make build` は `skills` 配列に書いたフォルダだけを
+staging へ写すので、`dist/studio.plugin` は 4 本のまま。崩れるのは marketplace 経由の Mac 側だけ。
+
+原因は両プラグインの `source` がどちらも `"./"` で、リポジトリ全体がコピーされる点にあると
+見ている（推定・未検証）。コピーのあとに `skills/` 配下が全部読まれるため、`skills` 配列の
+絞り込みが効かない。**入れ直しても直らない。**
+
+### 方針: どちらの案も今は採らない
+
+| 案 | やること | 難点 |
+|---|---|---|
+| 1 プラグインに統合 | `marketplace.json` を 1 本にまとめる | 制作系と git 系を別々に入れ外しできなくなる |
+| ディレクトリを分ける | `plugins/studio/skills/…` と `plugins/git-flow/skills/…` に分け、`source` を個別に向ける | anthropics/skills の構成から外れる |
+
+ディレクトリ分割は「構成は anthropics/skills に合わせる」というこのリポジトリの前提と
+正面から衝突する。この前提は一度フラット化を試して戻した経緯があり、軽く動かすものではない。
+よって**検討段階に留める。**
+
+統合案は担当分けを捨てることになる。制作系と git 系を別々に入れ外しする使い道が
+本当に無いと確認できてから決める。
+
+それまでは、git 系スキルの正式な呼び名を `git-flow:` とする。`studio:git-commit` も
+引けてしまうが、指しているファイルは同じなので挙動は変わらない。紛らわしいだけで実害は無い。
 
 ## 入れていないもの
 
