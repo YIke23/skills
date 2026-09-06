@@ -58,7 +58,7 @@ GitHub 側で失われたものは無い。`make sync` は revert に含まれ�
 | `marketplace.json` | `studio` に4本、`git-flow` に5本。意図どおり分かれている |
 | 導入済みプラグイン | 会社Mac に `studio@yike-skills` と `git-flow@yike-skills` の**両方**（sha `583eb49`、2026-09-05 導入） |
 | 生えているスキル | `git-flow` は 4 本、`studio` は 8 本 |
-| `skills/eli15/` | `SKILL.md` と `assets/base.css` のみ。`check_contrast.py` は**無い** |
+| `skills/eli15/` | 確認時点は `SKILL.md` と `assets/base.css` のみで `check_contrast.py` は無かった。**別 PR で `scripts/check_contrast.py` を実装し、参照切れを解消した** |
 
 **プラグインの導入状態は `skill-workflow.md` が正しかった。** 旧版のこの文書が書いていた
 「会社Mac にはプラグインを入れない」は事実と違う。両方入っている前提で読むこと。
@@ -125,9 +125,6 @@ python3 -c "import zipfile; z=zipfile.ZipFile('dist/studio.plugin'); print(sorte
 
 確認したら結果を「確認済みの状態」に書き、項目を消す。
 
-- **`skills/eli15/SKILL.md` が参照する `check_contrast.py` が無い。** 無いことは確認済み
-  （`skills/eli15/` は `SKILL.md` と `assets/base.css` だけ）。SKILL.md は 115 行目と 138 行目で
-  「同梱の `check_contrast.py`」と書いているので、**スクリプトを書くか、記述を外すかの判断が要る**
 - **個人Mac がフラット化中に `plugin update` していないか。** 会社Mac からは見えない。していれば
   旧 marketplace を掴んでいるので取り直す必要がある。個人Mac 側で確認する
 
