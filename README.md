@@ -11,7 +11,8 @@ Claude のスキルを 1 箇所で管理し、2 台の Mac と 2 つの claude.a
 .claude-plugin/marketplace.json   どのスキルをどのプラグインに束ねるかの定義
 skills/<skill-name>/SKILL.md      スキル本体。1 フォルダ 1 スキル、フラットに並べる
 template/SKILL.md                 新しいスキルを作るときの雛形
-scripts/                          アカウント配布用のビルドと、push 前の点検
+scripts/                          アカウント配布用のビルドと、push 前の点検、作業場への出し入れ
+docs/                             運用ガイドと設計判断の記録
 ```
 
 スキルの所属はフォルダ構造ではなく `marketplace.json` の `skills` 配列で決まる。
@@ -109,20 +110,17 @@ cd ~/dev/skills
 git switch -c fix/<name>
 # skills/<name>/SKILL.md を直す
 make check
-cp -r skills/<name> ~/.claude/skills/   # 試用のため。Claude Code を再起動して実際に呼ぶ
+make install name=<name>   # 試用のため。Claude Code を再起動して実際に呼ぶ
 git add -A && git commit -m "fix: <name> の〇〇を直す"
 git push -u origin fix/<name>
 gh pr create
 ```
 
-マージしたら `rm -rf ~/.claude/skills/<name>` で作業場を空に戻す。残すとプラグイン版と
+マージしたら `make uninstall name=<name>` で作業場を空に戻す。残すとプラグイン版と
 二重に並び、どちらを呼んでいるか分からなくなる。
 
 更新は「今までどおり呼べるが挙動だけ変わった」という壊れ方をする。`make check` は形式しか
 見ないので、変えた部分を実際に踏むところまでやる。
-
-> 試用の `cp` と後片付けの `rm -rf` は、`make install name=<x>` /
-> `make uninstall name=<x>` にする予定。**未実装。**
 
 ### 3. スキルを別の PC に配る
 

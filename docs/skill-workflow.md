@@ -36,15 +36,22 @@ Cowork を使うのは次の3つに限る。
 
 `main` は保護してあり、直接 push できない。GitHub へ届けるには必ずブランチと PR を経由する。
 
-### 深掘りノート: make install はまだ無い
+### 深掘りノート: make install の仕様
 
-現在の Makefile には `build` `check` `clean` しかない。**`make install` は未実装で、最初に足す必要がある。**
+`make install name=<x>` / `make uninstall name=<x>` は実装済み（2026-09-06）。中身は
+`scripts/install.py` で、Makefile からはこれを呼ぶだけ。
 
-決めた仕様は次のとおり。
-
-- `make install name=<x>` — `skills/<x>/` を `~/.claude/skills/<x>/` へ写す。引数なしの全件コピーは作らない
-- `make uninstall name=<x>` — `~/.claude/skills/<x>/` を消す。マージ後の後片付け用
+- `make install name=<x>` — `skills/<x>/` を `~/.claude/skills/<x>/` へ写す。既にあれば
+  入れ替える。**引数なしの全件コピーは作らない**
+- `make uninstall name=<x>` — `~/.claude/skills/<x>/` を消す。マージ後の後片付け用。
+  無ければ黙って skip するので、二重に叩いても壊れない
 - 写す前に、同名のプラグイン版が有効かどうかは見ない。二重に並ぶのは作業中だけなので許容する
+
+`name` は `skills/` 直下のフォルダ名 1 つだけを受ける。空・`/` を含む・`.` で始まるものは
+弾く。`uninstall` は宛先が `~/.claude/skills` の直下であることを確かめてから消すので、
+`name` を書き間違えて作業場ごと消す事故は起きない。
+
+`uninstall` のあとに他のスキルが残っていれば警告する。定常状態の作業場は空。
 
 ## 2. 新しくスキルを作る → ブランチを切って書き、marketplace.json に登録する
 
@@ -122,4 +129,4 @@ marketplace.json への登録が要るのは、この場面だけ。
 
 フラット化を試して戻した経緯、`~/.claude/skills` を作業ツリーにする構想がなぜ成立しなかったか、他に検討した接続案は `skill-distribution-pipeline.md` にある。
 
-最終更新 2026-09-06。`make install` は未実装のため、2章と3章の手順5はまだ実行できない。
+最終更新 2026-09-06。`make install` / `make uninstall` は実装済みで、2章と3章の手順はそのまま実行できる。

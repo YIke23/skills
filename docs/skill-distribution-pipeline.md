@@ -10,7 +10,7 @@
 リポジトリのルートを `~/.claude/skills` に一致させるための「フラット化」は**中止した**。
 このドキュメントの旧版に書かれていたフラット化の手順は、実行してはいけない。
 
-接続方式は **`make install` によるコピー**に決定（2026-09-05）。`~/dev/skills/skills/*` を `~/.claude/skills/` へ写す。symlink 案と worktree 案は下の表のとおり検討したうえで採らなかった。
+接続方式は **`make install` によるコピー**に決定（2026-09-05）。`~/dev/skills/skills/*` を `~/.claude/skills/` へ写す。symlink 案と worktree 案は下の表のとおり検討したうえで採らなかった。**2026-09-06 に `scripts/install.py` として実装済み**（仕様は `skill-workflow.md` の「深掘りノート: make install の仕様」）。
 
 ## 2026-09-06 の判断: 分担をやめる
 
@@ -54,7 +54,7 @@ GitHub 側で失われたものは無い。`make sync` は revert に含まれ�
 |---|---|
 | `git log` / `git status` | main = `9f341e3`、作業ツリーはクリーン。ローカルブランチは main のみ |
 | `~/.claude/skills` | **空**。フラット化の残骸は無く、作業場として正常な状態 |
-| `Makefile` | ターゲットは `build` / `check` / `clean` の3つ。`install` / `uninstall` は無い |
+| `Makefile` | 確認時点は `build` / `check` / `clean` の3つ。**この PR で `install` / `uninstall` を追加した** |
 | `marketplace.json` | `studio` に4本、`git-flow` に5本。意図どおり分かれている |
 | 導入済みプラグイン | 会社Mac に `studio@yike-skills` と `git-flow@yike-skills` の**両方**（sha `583eb49`、2026-09-05 導入） |
 | 生えているスキル | `git-flow` は 4 本、`studio` は 8 本 |
@@ -125,8 +125,6 @@ python3 -c "import zipfile; z=zipfile.ZipFile('dist/studio.plugin'); print(sorte
 
 確認したら結果を「確認済みの状態」に書き、項目を消す。
 
-- **`make install` / `make uninstall` は未実装。** 現在の Makefile は `build` / `check` / `clean`
-  のみ。`skill-workflow.md` の2章・3章の手順5はこれが入るまで実行できない。最初に足すべきもの
 - **`skills/eli15/SKILL.md` が参照する `check_contrast.py` が無い。** 無いことは確認済み
   （`skills/eli15/` は `SKILL.md` と `assets/base.css` だけ）。SKILL.md は 115 行目と 138 行目で
   「同梱の `check_contrast.py`」と書いているので、**スクリプトを書くか、記述を外すかの判断が要る**
