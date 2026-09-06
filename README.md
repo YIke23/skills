@@ -16,7 +16,8 @@ scripts/                          アカウント配布用のビルドと、push
 
 スキルの所属はフォルダ構造ではなく `marketplace.json` の `skills` 配列で決まる。
 束ね方を変えたいときは JSON を直すだけでよく、ファイルは動かさない。
-ただし marketplace 経由で Mac に入れた場合、この絞り込みが現状効いていない（→ 未解決）。
+この絞り込みは marketplace 経由でも効く。キャッシュにはリポジトリ全体が複製されるが、
+生えるのは配列に書いたものだけ（→ studio に git 系が混ざる件）。
 
 | プラグイン | 中身 | 配布先 |
 |---|---|---|
@@ -163,6 +164,9 @@ make build          # dist/ に .plugin と skills/*.zip ができる
 `dist/studio.plugin` を **Customize > Plugins** に上げる。会社と個人で 1 回ずつ、計 2 回。
 4 スキルが 1 ファイルに入っているので、これだけで済む。
 
+`skills` 配列を変えたら必ず上げ直すこと。上げっぱなしにすると古い構成がアカウント側に
+残り、`studio:` に余計なスキルが並ぶ（→ studio に git 系が混ざる件）。
+
 素の `/eli15` で呼びたい場合だけ `dist/skills/eli15.zip` を **Customize > Skills** に上げる。
 スキル 1 本 = zip 1 つなので、増やすほど手作業が増える。
 
@@ -199,35 +203,61 @@ Disabled にする。作業が終わったら Active に戻す。**戻し忘れ�
 どのプラグインにも属していないスキルを見る。description が 1536 字を超えると
 切り捨てられて意図した場面で呼ばれなくなるため、ここで止める。
 
-## 未解決: marketplace 経由だと担当が分かれない
+## studio に git 系が混ざるのは、上げたバンドルが古いから
 
-`marketplace.json` は `studio` に 4 本、`git-flow` に 5 本を割り当てている。
-ところが Mac に入った `studio` には 9 本すべてが入っていて、
-`studio:git-commit` と `git-flow:git-commit` が同時に並ぶ。
+`studio:git-commit` と `git-flow:git-commit` が並んで見えることがある。原因は
+`marketplace.json` ではなく、**claude.ai アカウントに上げた `studio.plugin` が古いまま**
+であること。marketplace 側を消して入れ直しても直らない。
 
-**アカウント配布は影響を受けない。** `make build` は `skills` 配列に書いたフォルダだけを
-staging へ写すので、`dist/studio.plugin` は 4 本のまま。崩れるのは marketplace 経由の Mac 側だけ。
+### marketplace の絞り込みは効いている
 
-原因は両プラグインの `source` がどちらも `"./"` で、リポジトリ全体がコピーされる点にあると
-見ている（推定・未検証）。コピーのあとに `skills/` 配下が全部読まれるため、`skills` 配列の
-絞り込みが効かない。**入れ直しても直らない。**
+`source: "./"` はリポジトリ全体を複製するので、キャッシュには必ず 9 本ぶんのフォルダが
+並ぶ。ここを見て「配列が無視されている」と誤診しやすい。**フォルダの数は根拠にならない。**
 
-### 方針: どちらの案も今は採らない
+`git-flow` が反証になる。
 
-| 案 | やること | 難点 |
-|---|---|---|
-| 1 プラグインに統合 | `marketplace.json` を 1 本にまとめる | 制作系と git 系を別々に入れ外しできなくなる |
-| ディレクトリを分ける | `plugins/studio/skills/…` と `plugins/git-flow/skills/…` に分け、`source` を個別に向ける | anthropics/skills の構成から外れる |
+| 見るもの | 中身 |
+|---|---|
+| `~/.claude/plugins/cache/yike-skills/git-flow/<sha>/skills/` | 9 フォルダ（リポジトリ全体の複製） |
+| 実際に生えるスキル | `skills` 配列に書いた 5 本だけ |
 
-ディレクトリ分割は「構成は anthropics/skills に合わせる」というこのリポジトリの前提と
-正面から衝突する。この前提は一度フラット化を試して戻した経緯があり、軽く動かすものではない。
-よって**検討段階に留める。**
+同じ `source: "./"` を使っていて `git-flow` は絞れている。つまり配列は効いている。
 
-統合案は担当分けを捨てることになる。制作系と git 系を別々に入れ外しする使い道が
-本当に無いと確認できてから決める。
+### 混ざっているのは inline のほう
 
-それまでは、git 系スキルの正式な呼び名を `git-flow:` とする。`studio:git-commit` も
-引けてしまうが、指しているファイルは同じなので挙動は変わらない。紛らわしいだけで実害は無い。
+`studio` だけ実体が二重にある。marketplace 版とは別に、アカウントへ上げた `.plugin`
+バンドルが **`studio@inline`** として入っており、この中身が 9 本ある。
+
+```
+.../rpm/plugin_<id>/.claude-plugin/plugin.json の skills 配列   → 4 本
+.../rpm/plugin_<id>/skills/ の中身                              → 9 本
+```
+
+バンドルに 9 本ぶんのフォルダが同梱されているため、git 系まで `studio:` で引けてしまう。
+`git-flow` に同じ症状が出ないのは、`git-flow` をアカウントに上げていないから。
+
+### 直し方
+
+`scripts/build.py` は `skills` 配列を回して該当フォルダだけを staging へ写す。いまビルド
+すれば 4 本のバンドルができるので、上げ直せば直る。
+
+```bash
+make build
+python3 -c "import zipfile; z=zipfile.ZipFile('dist/studio.plugin'); print(sorted({n.split('/')[1] for n in z.namelist() if n.startswith('skills/') and n.count('/') > 1}))"
+```
+
+4 本であることを確かめてから `dist/studio.plugin` を **Customize > Plugins** に上げ直し、
+古いものと差し替える。会社と個人で 1 回ずつ。**marketplace 側は触らない。**
+
+旧名の `pr-flow` がアカウントに残っていれば、あわせて消す。差し替えが済むまでは、git 系
+スキルの正式な呼び名を `git-flow:` とする。`studio:git-commit` も引けてしまうが、指して
+いるファイルは同じなので挙動は変わらない。
+
+### 補足: `create-branch` が一覧に出ないのは正常
+
+`skills/create-branch/SKILL.md` には `disable-model-invocation: true` が付いている。
+モデルが自動で選ぶ一覧には出ず、`/git-flow:create-branch` と明示的に叩いたときだけ動く。
+`studio:` にも `git-flow:` にも見えないのはこのためで、配布の失敗ではない。
 
 ## 入れていないもの
 
