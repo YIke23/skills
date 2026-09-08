@@ -20,6 +20,15 @@
       ]
     },
     {
+      "name": "skill-kit",
+      "description": "スキルを作るための道具立て。着手前に先行事例を調べ、作るか既存を使うかを決める",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/skill-prior-art"
+      ]
+    },
+    {
       "name": "git-flow",
       "description": "ブランチ作成・コミット・PR 作成・Issue 起票まで、git と GitHub まわりの定型作業",
       "source": "./",

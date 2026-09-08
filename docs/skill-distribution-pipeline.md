@@ -22,6 +22,8 @@
 
 **3. 唯一の強みが差になっていない。** Cowork の優位だと思っていた事前調査は、Claude Code にも同じ道具がある。WebSearch / WebFetch は標準、`skill-prior-art` はアカウント側のスキルなので同期される、MCP コネクタは `.mcp.json` で足せる。違うのは記録の置き場所だけだった。しかもスキル作りで最も効く調査は「自分の9本と重複していないか」で、それはリポジトリの中でやるほうが当たりが良い。
 
+> 2026-09-07 追記: `skill-prior-art` は「アカウント側のスキル」ではなく、`anthropic-skills` プラグイン同梱だった（実体は `~/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/` 配下）。このリポジトリの新規プラグイン `skill-kit` に取り込んだので、配布するプラグインは `studio`・`skill-kit`・`git-flow` の3つ、スキルは 10 本になった。
+
 ### Cowork を使う場面（限定）
 
 - 会社Mac が手元にない（個人Mac・外出先）。リポジトリの実体が会社Mac にしかない以上、そこでは代替手段がない

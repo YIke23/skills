@@ -28,9 +28,11 @@ Cowork を使うのは次の3つに限る。
   （実体・git）    └── push / PR ──→ GitHub main ──→ plugin update ──→ 両方の Mac
 ```
 
-**完成したスキルはプラグイン経由で受け取る。** `studio` と `git-flow` の2つを配っている。呼び名は `/studio:eli15` の形になる。
+**完成したスキルはプラグイン経由で受け取る。** `studio`・`skill-kit`・`git-flow` の3つを配っている。呼び名は `/studio:eli15` の形になる。
 
 **会社Mac には `studio` と `git-flow` の両方が入っている**（2026-09-06 確認。`installed_plugins.json` に `studio@yike-skills` と `git-flow@yike-skills` が `scope: user` で並ぶ）。個人Mac の導入状態は会社Mac からは見えないため未確認。
+
+`skill-kit` は 2026-09-07 に追加したプラグインで、**まだどの Mac にも入っていない**。受け取るには各 Mac で `plugin update` が要る。
 
 `~/.claude/skills` は完成品の置き場ではない。**書いている途中の1本だけを一時的に置く作業場**で、定常状態では空。マージしたら消す。全部を入れるとプラグイン側と二重に並ぶ。
 
@@ -99,7 +101,7 @@ marketplace.json への登録が要るのは、この場面だけ。
 | `~/.claude/skills` | 書いている途中の1本を置く作業場。定常状態では空 |
 | GitHub main | 公開先。保護されていて直接 push できない |
 | `marketplace.json` | どのスキルをどのプラグインとして配るかの一覧。新規追加のときだけ更新する |
-| `studio` / `git-flow` | 配布用のプラグイン2つ |
+| `studio` / `skill-kit` / `git-flow` | 配布用のプラグイン3つ |
 | `plugin update` | 各 Mac が GitHub から取り込む操作 |
 
 ## studio に git 系が混ざるのは、上げたバンドルが古いから
