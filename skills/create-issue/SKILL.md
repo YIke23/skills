@@ -5,7 +5,8 @@ description: >-
   「これチケットにしといて」など、Issue の作成を依頼したときに使う。
   リポジトリのホスト(GitHub / Bitbucket)判定・プロジェクト方針の確認・重複調査・
   既存 issue の書式に倣った本文生成・承認・`gh issue create` 実行までを行う。
-  asteria-web / web / pist6-api など複数リポジトリで共通に使える。
+  特定のリポジトリに依存しない。初めて触るリポジトリでも、既存 issue とラベルを
+  読んで書式を合わせる。
 ---
 
 # create-issue
@@ -52,8 +53,8 @@ ls .github/ISSUE_TEMPLATE 2>/dev/null                 # テンプレートがあ
 Issue 作成を制限する記述があれば、**起票せずユーザーに提示して指示を仰ぐ。**
 ユーザーが明示的に依頼している場合でも、方針と食い違う旨は必ず一言伝えてから進める。
 
-> 例（asteria-web の `CLAUDE.md`）: 「公開リリース前は、ブランチもPRも作らない …
-> 自分の判断で新たに Issue や PR を作らないこと。」
+> 例: 「公開リリース前は、ブランチもPRも作らない」「自分の判断で新たに Issue や PR を
+> 作らないこと」のような記述。開発初期のリポジトリでは珍しくない。
 
 ### 3. 起票内容を固める
 
@@ -97,7 +98,7 @@ gh issue view <番号> -R <owner/repo> --json title,body --jq .body
 末尾に句点を付けない。チケット番号の接頭辞は、そのリポジトリの既存issueが付けて
 いなければ付けない。
 
-- 良い: `fullWidthAlphabetsToHalfWidth が全角ローマ数字を半角化せず、ＦⅠ判定で throw が発生する`
+- 良い: `parseDate が空文字に Invalid Date を返し、一覧の並び替えが先頭に寄る`
 - 悪い: `バグ修正` / `formats.ts の件`
 
 ### 6. ラベルを選ぶ（GitHub のみ）
@@ -140,12 +141,14 @@ gh issue create -R <owner/repo> \
 - 作成後、返ってきた issue の URL をユーザーに返す。
 - assignee を指定するなら `--assignee @me`。指示が無ければ付けない。
 
-### 9. フォールバック（Bitbucket / `gh` 未認証・未インストール）
+### 9. フォールバック（GitHub 以外 / `gh` 未認証・未インストール）
 
-**pist6-api のような Bitbucket リポジトリでは `gh` は使えない。** 起票を諦めるのではなく、
-生成したタイトルと本文を Markdown のまま出力し、ユーザーがそのまま貼れる形で渡す。
-そのうえで、どこに起票する想定かを一言添える（Bitbucket の Issues か、Jira 等の別チケット
-システムか、ユーザーに確認する）。
+**Bitbucket などのリポジトリでは `gh` は使えない。** 起票を諦めるのではなく、生成した
+タイトルと本文を Markdown のまま出力し、ユーザーがそのまま貼れる形で渡す。そのうえで、
+どこに起票する想定かを一言添えて確認する（そのホストの Issues か、Jira 等の別チケット
+システムか）。
+
+GitLab で `glab` が入っていれば `glab issue create` が使える。無ければ同じく Markdown を出力する。
 
 `gh` が未認証の場合も同じくMarkdownを出力し、`gh auth login` が要る旨を伝える。
 
@@ -215,17 +218,26 @@ Error: ...
 （判断が必要な論点、未確認事項。**確認していないことは「要精査」と明記する**）
 ````
 
-## リポジトリ別メモ
+## 初めて触るリポジトリで最初に見ること
 
-`gh` の出力が常に正。この表は当たりを付けるための目安で、実際の値は毎回コマンドで確認する。
+**リポジトリ固有の値をこのスキルに書き溜めない。** ホスト・ラベル・テンプレート・
+既定ブランチはリポジトリごとに違い、時間でも変わる。毎回コマンドの出力を正とする。
 
-| リポジトリ | ホスト | 起票 | 注意 |
-|---|---|---|---|
-| `web` | GitHub `JIT-JP/web` | `gh issue create` | Issues を実運用中。既存issueに倣う。既定ブランチは `develop` |
-| `asteria-web` | GitHub `mediowl/asteria-web` | `gh issue create` | **`CLAUDE.md` が自発的なIssue作成を禁止。**手順2の確認を必ず行う |
-| `pist6-api` | **Bitbucket** `mediowlinc/pist6-api` | **`gh` 不可** | 手順9のフォールバックへ。起票先をユーザーに確認する |
+```bash
+git remote get-url origin                             # ホストと owner/repo
+gh repo view --json defaultBranchRef --jq .defaultBranchRef.name   # 既定ブランチ
+ls .github/ISSUE_TEMPLATE 2>/dev/null                 # テンプレートの有無
+gh label list -R <owner/repo>                         # 実在するラベル
+gh issue list -R <owner/repo> --limit 5               # 運用されているか、書式の傾向
+```
 
-ラベルの傾向（`gh label list` で必ず実物を確認すること）:
+判断の目安。
 
-- `JIT-JP/web` … `優先度：高` / `優先度：中` / `優先度：低`、`VRT`、`dependencies`、`javascript`
-- `mediowl/asteria-web` … GitHub の既定ラベルのみ（`bug` / `enhancement` / `documentation` など）
+- `gh issue list` が空 → そのリポジトリは Issues を使っていない可能性がある。
+  起票先が合っているかユーザーに確認する
+- 優先度ラベルがある → 優先度は自分で決めず、手順7でユーザーに確認する
+- `.github/ISSUE_TEMPLATE` がある → 下のテンプレートより優先する
+- remote が `github.com` 以外 → 手順9のフォールバックへ
+
+リポジトリごとの事情（起票の可否、貼り先、命名の癖）は、このスキルではなく
+**そのリポジトリの `CLAUDE.md`** に書く。そちらは手順2で必ず読む。
