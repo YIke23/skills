@@ -57,6 +57,16 @@ description: 新しいスキルを作る前に、同じ仕事をするスキル�
 | T4 | skills.sh レジストリ | 網羅性は最大。ただし**無審査**なので中身を読むまで信用しない |
 | T5 | 著名企業・著名個人の公開スキル | 保守が続く見込みが立つ |
 
+T0 は手で探さない。検索語をまとめて渡せば、手元のスキルを横断して当たる。
+
+```bash
+bash ${CLAUDE_SKILL_DIR}/scripts/search_local.sh <検索語> [検索語...]
+```
+
+自分のリポジトリ、`~/.claude/skills`、プラグインのキャッシュ、Claude Desktop の
+プラグイン配下を見る。終了コードは 0=候補なし / 1=候補あり。
+**0 でも T1〜T5 は続ける。** T0 に無いことは、他の層に無いことを意味しない。
+
 **T2は最も見落とされ、最も効く。** 既存サービス上の作業をスキル化しようとしているなら、
 そのサービス自身が公式スキルを出していないかを必ず確認する。
 具体的なコマンドと調べ先の一覧は `references/sources.md` を読むこと。
@@ -86,7 +96,7 @@ description: 新しいスキルを作る前に、同じ仕事をするスキル�
 
 ### Step 4 — レポートを書いて検証する
 
-`templates/report.md` の形式で書き、機械検証を通す。
+`assets/report.md` の形式で書き、機械検証を通す。
 
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/check_report.py <レポートのパス>
@@ -102,7 +112,7 @@ exit 2 で落ちたら直す。調査層の抜け・出典の無い数値・空�
 ## 参照ファイル
 
 - `references/sources.md` — 各層の具体的な調べ先、コマンド、既知のベンダー公式スキル一覧
-- `templates/report.md` — レポートの雛形
+- `assets/report.md` — レポートの雛形
 - `scripts/search_local.sh` — T0（手元）の重複を機械的に洗い出す
 - `scripts/check_report.py` — レポートの機械検証。exit 2 で落とす
 - `scripts/vendor.sh` — 外部スキルをSHA固定で取り込む。`vendor` を選んだときだけ使う
