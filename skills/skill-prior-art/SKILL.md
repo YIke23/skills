@@ -96,7 +96,7 @@ bash ${CLAUDE_SKILL_DIR}/scripts/search_local.sh <検索語> [検索語...]
 
 ### Step 4 — レポートを書いて検証する
 
-`templates/report.md` の形式で書き、機械検証を通す。
+`assets/report.md` の形式で書き、機械検証を通す。
 
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/check_report.py <レポートのパス>
@@ -112,7 +112,7 @@ exit 2 で落ちたら直す。調査層の抜け・出典の無い数値・空�
 ## 参照ファイル
 
 - `references/sources.md` — 各層の具体的な調べ先、コマンド、既知のベンダー公式スキル一覧
-- `templates/report.md` — レポートの雛形
+- `assets/report.md` — レポートの雛形
 - `scripts/search_local.sh` — T0（手元）の重複を機械的に洗い出す
 - `scripts/check_report.py` — レポートの機械検証。exit 2 で落とす
 
