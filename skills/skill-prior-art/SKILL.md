@@ -87,7 +87,7 @@ bash ${CLAUDE_SKILL_DIR}/scripts/search_local.sh <検索語> [検索語...]
 | 結論 | 意味 | 次の一手 |
 |---|---|---|
 | `adopt` | そのまま使える | インストールを提案して終了。作らない |
-| `vendor` | 取り込んで薄く差分を当てる | `vendor.sh` でSHA固定して取り込み、レビュー |
+| `vendor` | 取り込んで薄く差分を当てる | `bash ${CLAUDE_SKILL_DIR}/scripts/vendor.sh <owner/repo> <パス> --dest <取り込み先>` でSHA固定して取り込み、レビュー |
 | `derive` | 骨格を借りて作り直す | 借用元を明記して skill-creator へ |
 | `build-new` | 該当なし | **既存で満たせない点を列挙してから** skill-creator へ |
 
@@ -115,6 +115,7 @@ exit 2 で落ちたら直す。調査層の抜け・出典の無い数値・空�
 - `assets/report.md` — レポートの雛形
 - `scripts/search_local.sh` — T0（手元）の重複を機械的に洗い出す
 - `scripts/check_report.py` — レポートの機械検証。exit 2 で落とす
+- `scripts/vendor.sh` — 外部スキルをSHA固定で取り込む。`vendor` を選んだときだけ使う
 
 ## このスキル自体の先行事例
 
