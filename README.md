@@ -23,7 +23,7 @@ docs/                             運用ガイドと設計判断の記録
 | プラグイン | 中身 | 配布先 |
 |---|---|---|
 | `studio` | web-image-builder, icon-builder, eli15, paas-onboarding | Mac + claude.ai アカウント |
-| `git-flow` | create-branch, git-commit, create-pr, create-issue | Mac のみ（手元の git を触るため） |
+| `git-flow` | create-branch, git-commit, create-pr, release-pr, create-issue | Mac のみ（手元の git を触るため） |
 
 呼び出しは `/studio:eli15` のように `プラグイン名:スキル名` になる。
 
