@@ -21,11 +21,12 @@
     },
     {
       "name": "skill-kit",
-      "description": "スキルを作るための道具立て。着手前に先行事例を調べ、作るか既存を使うかを決める",
+      "description": "スキルを扱うための道具立て。着手前に先行事例を調べて作るか既存を使うかを決め、入っているスキルの出自と GitHub との差分を棚卸しする",
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/skill-prior-art"
+        "./skills/skill-prior-art",
+        "./skills/skill-inventory"
       ]
     },
     {
