@@ -30,13 +30,14 @@
     },
     {
       "name": "git-flow",
-      "description": "ブランチ作成・コミット・PR 作成・Issue 起票まで、git と GitHub まわりの定型作業",
+      "description": "ブランチ作成・コミット・PR 作成（通常・本番リリース）・Issue 起票まで、git と GitHub まわりの定型作業",
       "source": "./",
       "strict": false,
       "skills": [
         "./skills/create-branch",
         "./skills/git-commit",
         "./skills/create-pr",
+        "./skills/release-pr",
         "./skills/create-issue"
       ]
     }
