@@ -187,9 +187,21 @@ git branch -vv | grep ': gone]'
 `/clean_gone`（`commit-commands` プラグイン、Anthropic 公式）が、`[gone]` の検出から
 worktree の `git worktree remove --force`、`git branch -D` までを1回で行う。
 
+**渡す前に、前提を2つ満たしておく。** どちらも `clean_gone` 側は面倒を見ない（実測で確認）。
+
+1. **`git fetch --prune` を先に済ませる。** `clean_gone` は fetch しない。GitHub が
+   マージ時にリモートを消しただけの段階では、remote-tracking ref がローカルに残っており
+   **`[gone]` にならない**。prune していないと「掃除するものはありません」と報告されて終わる
+2. **`[gone]` のブランチに立ったまま渡さない。** カレントブランチは削除できず
+   `cannot delete branch 'X' used by worktree at ...` で失敗する。エラーは表示され、
+   他のブランチの処理は続くので壊れはしないが、そのブランチだけ残る
+
+手順7で `git fetch --prune` と `git switch <base>` を済ませているのは、この2つのためでもある。
+
 **Web UI や auto-merge でマージされた分は、このスキルを通らずに `[gone]` になる。**
-そちらは定期的に `/clean_gone` を回すのが担当。このスキルが拾えるのは、自分でマージした
-ぶんだけだと理解しておく。
+そちらは定期的に `/clean_gone` を回すのが担当。ただし単独で回すときは、**上の前提1が
+満たされていない**（誰も prune していない）ことが多い。先に `git fetch --prune` を促すこと。
+このスキルが拾えるのは、自分でマージしたぶんだけだと理解しておく。
 
 ## 落とし穴
 
