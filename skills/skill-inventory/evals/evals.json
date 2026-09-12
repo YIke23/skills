@@ -1,0 +1,49 @@
+{
+  "skill_name": "skill-inventory",
+  "evals": [
+    {
+      "id": 0,
+      "name": "full-inventory-table",
+      "prompt": "今このセッションで使えるスキルを一覧表にしてほしい。プラグイン由来のやつも全部入れて、どこから来てるのか分かる形にして。",
+      "expected_output": "3系統すべて（組み込み・CLIプラグイン・デスクトップ・claude.ai有効化・ユーザー）を網羅した一覧表。組み込みがディスクから列挙できないことへの言及。",
+      "files": [],
+      "assertions": [
+        "回答に5系統すべて（組み込み / CLIプラグイン / デスクトップのプラグイン / claude.ai で有効化 / ユーザー）が出自として区別されて現れる",
+        "`claude plugin list` では返らないデスクトップ由来のスキル（`anthropic-skills:` または `design:` の名前空間を持つもの）が一覧に含まれている",
+        "一覧の総件数が70件以上ある（実測77件。プラグイン系統を落とすと大幅に下回る）",
+        "組み込みスキルがディスクから列挙できない（本体バイナリに埋まっている）ことに言及し、セッションの一覧から補ったと述べている",
+        "marketplace.json が選んでいないキャッシュ配下のスキルディレクトリ（git-flow の eli15 / icon-builder / web-image-builder / paas-onboarding / skill-prior-art）を git-flow 由来として列挙していない",
+        "`commit-commands` が配る3つのコマンド（commit / commit-push-pr / clean_gone）が一覧に含まれている"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "github-drift-hunt",
+      "prompt": "~/.claude/skills に置いてるスキルと GitHub 側でずれてるものある？ 更新漏れがないか見たい",
+      "expected_output": "skill-prior-art の欠損5ファイルを検出。marketplace の遅れと導入済みプラグインの遅れが別物であることの説明。",
+      "files": [],
+      "assertions": [
+        "`~/.claude/skills/skill-prior-art` に GitHub 側と比べたファイルの欠損があることを検出している",
+        "欠損している5ファイル（assets/report.md, references/sources.md, scripts/check_report.py, scripts/search_local.sh, scripts/vendor.sh）をすべて列挙している",
+        "marketplace クローンの遅れと、導入済みプラグインの版の遅れを、別々の独立した軸として説明している",
+        "`plugin update` / `marketplace update` / `plugin install` のいずれも実行していない（読み取り専用で完了している）",
+        "`skill-kit@yike-skills` が未導入で、手置きの skill-prior-art が代わりに使われている状態に言及している"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "stale-plugin-diagnosis",
+      "prompt": "studio プラグインの eli15 スキル、直したはずなのに古い挙動のままなんだけど何が起きてる？",
+      "expected_output": "studio@yike-skills の導入済み SHA が marketplace HEAD より25コミット古いことを特定し、eli15 のファイルが実際に変わっていることを示す。plugin update と再起動が必要という診断。",
+      "files": [],
+      "assertions": [
+        "`studio@yike-skills` の導入済みバージョン（SHA 583eb49ce025）が marketplace の HEAD より古いことを特定している",
+        "何コミット遅れているかの具体的な数（25）を出している",
+        "その遅れの区間で eli15 のファイル（skills/eli15/SKILL.md または skills/eli15/scripts/check_contrast.py）が実際に変更されていることを示している",
+        "`plugin update` の実行と、その後のセッション再起動の両方が必要だと述べている",
+        "`marketplace update` だけでは導入済みプラグインの版が切り替わらないことに言及している",
+        "CLI とデスクトップの両方に `studio` プラグインが入っており、`/studio:eli15` が2つの別実体を指していることに言及している"
+      ]
+    }
+  ]
+}
