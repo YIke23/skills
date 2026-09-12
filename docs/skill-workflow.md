@@ -1,4 +1,4 @@
-# スキル運用ガイド（2026-09-06）
+# スキル運用ガイド（2026-09-13）
 
 会社Mac でスキルを書き、個人Mac まで届けるまでの手順。読者は YIke 本人と、このプロジェクトを引き継ぐ Claude。
 
@@ -34,7 +34,28 @@ Cowork を使うのは次の3つに限る。
 
 `skill-kit` は 2026-09-07 に追加したプラグインで、**まだどの Mac にも入っていない**。受け取るには各 Mac で `plugin update` が要る。
 
-`~/.claude/skills` は完成品の置き場ではない。**書いている途中の1本だけを一時的に置く作業場**で、定常状態では空。マージしたら消す。全部を入れるとプラグイン側と二重に並ぶ。
+`~/.claude/skills` は完成品の置き場ではない。**書いている途中の1本だけを一時的に置く作業場**で、マージしたら消す。全部を入れるとプラグイン側と二重に並ぶ。
+
+ただし**空にはならない**。下の例外が1件ある。
+
+### 例外: notion-weekly-progress は作業場に常駐する
+
+`notion-weekly-progress` は、**GitHub に上げない唯一のスキル**。このリポジトリにも
+`marketplace.json` にも載せず、`~/.claude/skills` に置いたまま使う。
+
+そのため作業場には常に次の2つが残る。
+
+| 残るもの | 中身 |
+|---|---|
+| `notion-weekly-progress/` | スキル本体（`SKILL.md` / `assets` / `references` / `scripts`） |
+| `notion-weekly-progress-docs/` | `prior-art-notion-weekly-progress.md` 1枚。`SKILL.md` を持たないのでスキルとしては読み込まれない。他のスキルなら `docs/` に置く先行事例調査の記録だが、本体がリポジトリに無いので行き場がなくここに同居している |
+
+覚えておくことは2つ。
+
+- **`make uninstall` の「作業場に残っている」警告は、この2つの名前についてだけは正常。**
+  それ以外の名前が混じっていたら、それが片付け忘れ
+- 2章・3章の流れ（ブランチ → PR → `plugin update`）はこのスキルには適用されない。
+  GitHub を経由しないため、**個人Mac には届かない**
 
 `main` は保護してあり、直接 push できない。GitHub へ届けるには必ずブランチと PR を経由する。
 
@@ -53,7 +74,8 @@ Cowork を使うのは次の3つに限る。
 弾く。`uninstall` は宛先が `~/.claude/skills` の直下であることを確かめてから消すので、
 `name` を書き間違えて作業場ごと消す事故は起きない。
 
-`uninstall` のあとに他のスキルが残っていれば警告する。定常状態の作業場は空。
+`uninstall` のあとに他のスキルが残っていれば警告する。ただし作業場が完全に空になることは
+無く、`notion-weekly-progress` と `notion-weekly-progress-docs` は常に警告に出る（上の例外）。
 
 ## 2. 新しくスキルを作る → ブランチを切って書き、marketplace.json に登録する
 
@@ -98,7 +120,7 @@ marketplace.json への登録が要るのは、この場面だけ。
 |---|---|
 | `~/dev/skills` | 会社Mac にあるスキルの実体。GitHub のローカルリポジトリ |
 | `~/dev/skills/docs` | このガイドと設計記録の置き場。スキル本体と同じ履歴で追える |
-| `~/.claude/skills` | 書いている途中の1本を置く作業場。定常状態では空 |
+| `~/.claude/skills` | 書いている途中の1本を置く作業場。`notion-weekly-progress` とその調査記録だけが常駐する |
 | GitHub main | 公開先。保護されていて直接 push できない |
 | `marketplace.json` | どのスキルをどのプラグインとして配るかの一覧。新規追加のときだけ更新する |
 | `studio` / `skill-kit` / `git-flow` | 配布用のプラグイン3つ |
@@ -131,4 +153,5 @@ marketplace.json への登録が要るのは、この場面だけ。
 
 フラット化を試して戻した経緯、`~/.claude/skills` を作業ツリーにする構想がなぜ成立しなかったか、他に検討した接続案は `skill-distribution-pipeline.md` にある。
 
-最終更新 2026-09-06。`make install` / `make uninstall` は実装済みで、2章と3章の手順はそのまま実行できる。
+最終更新 2026-09-13。`make install` / `make uninstall` は実装済みで、2章と3章の手順はそのまま実行できる。
+2026-09-13 に、作業場が空にならない例外（`notion-weekly-progress`）を1章に追記した。
