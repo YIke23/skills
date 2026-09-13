@@ -1,19 +1,21 @@
 ---
 name: icon-builder
 description: |
-  favicon・アプリアイコン・SNSアイコンといった「正方形アイコン一式」を、意匠の設計から
+  favicon・PWA・iOS/Androidアプリアイコンといった「正方形アイコン一式」を、意匠の設計から
   全形式の書き出し・機械検証まで通しで作る。「faviconを作って」「サイトのアイコンを変えたい」
   「アプリのアイコンを作って」「PWAのアイコン」「ホーム画面に追加したときのアイコン」
-  「SNSのプロフィール画像を作って」「Xとnoteとyoutubeのアイコンを揃えたい」
-  「ロゴをアイコンにして」のような依頼では必ず使うこと。明示されていなくても、
-  新規サイト・新規アプリの立ち上げやリブランドで正方形アイコンが成果物に含まれる場面に適用する。
+  「ロゴをアイコンにして」「アイコンの意匠を決めたい」のような依頼では必ず使うこと。
+  明示されていなくても、新規サイト・新規アプリの立ち上げやリブランドで正方形アイコンが
+  成果物に含まれる場面に適用する。**意匠を起こすのはこのスキルなので、SNS用だけが必要な
+  場合でも、まだ形が決まっていないならまずここを通す。**
   「16pxで潰れて何か分からない」「apple-touch-iconの背景が黒くなる」「Androidでロゴの端が欠ける」
-  「App Storeがアルファチャンネルを理由に弾く」「Xやnoteで四隅が切れる」は、
-  どれもこのスキルの検証スクリプトが納品前に止める事故。ImageMagick / PIL / cairosvg で
-  favicon.ico や各サイズのPNGを作ろうとする前に必ず読むこと。それらはSVG内のCSSを無視するので、
-  ダークモード対応のアイコンが黙って別物に焼き上がる。
-  なお、アイコンと社名を横に並べたヘッダー用ロゴロックアップは web-image-builder の担当。
-  こちらは正方形アイコン単体を扱う。
+  「App Storeがアルファチャンネルを理由に弾く」は、どれもこのスキルの検証スクリプトが
+  納品前に止める事故。ImageMagick / PIL / cairosvg で favicon.ico や各サイズのPNGを
+  作ろうとする前に必ず読むこと。それらはSVG内のCSSを無視するので、ダークモード対応の
+  アイコンが黙って別物に焼き上がる。
+  なお、決まったアイコンをX・YouTube・Instagram・note・LINE・GitHub・Slackの各アカウント用に
+  書き出すのは sns-icon-builder、アイコンと社名を横に並べたヘッダー用ロゴロックアップは
+  web-image-builder の担当。
 ---
 
 # icon-builder
@@ -21,11 +23,17 @@ description: |
 ## 守備範囲
 
 **作るもの**: 正方形のアイコン1つと、それを各面の制約に合わせて派生させた一式。
-favicon、PWA、iOS/Androidアプリアイコン、SNSのプロフィール画像。
+favicon、PWA、iOS/Androidアプリアイコン。**意匠そのものの設計もここ。**
 
-**作らないもの**: アイコン＋社名の横並びロゴ（ヘッダー用のロゴロックアップ）、OGP画像、
-バナー。これらは `web-image-builder` の担当。ロゴロックアップが既にあって、その中の
-アイコン部分をアイコン一式に展開する場合はこちらで扱う。
+**作らないもの**:
+
+- **各SNSアカウント用のアイコン** → `sns-icon-builder`。社ごとに切り抜かれる形が違い
+  （円と角丸四角が混在する）、縮尺を変えて焼き分ける必要があるので別に切ってある。
+  意匠を決めるのはこちら、それを各社へ焼き分けるのがあちら
+- **アイコン＋社名の横並びロゴ、OGP画像、バナー** → `web-image-builder`
+
+ロゴロックアップが既にあって、その中のアイコン部分をアイコン一式に展開する場合は
+こちらで扱う。
 
 ## 中核となる考え方
 
@@ -73,7 +81,7 @@ python3 scripts/preview_icons.py \
 ```
 
 `preview.html`（人が見る）と `preview.png`（あなたが `Read` で見る）が出る。
-16/32/48/64px の原寸、明るいタブと暗いタブ、iOSの角丸とSNSの円形クロップ、
+16/32/48/64px の原寸、明るいタブと暗いタブ、iOSの角丸とAndroidの円形マスク、
 16pxコントラストの数値が並ぶ。**先に自分でも `preview.png` を見て、明らかに16pxで
 死んでいる案は出す前に描き直す。**
 
@@ -84,11 +92,11 @@ python3 scripts/build_icons.py \
   --svg master.svg --out dist \
   --name "Mediowl" --short-name "Mediowl" \
   --pad-bg "#1c56d6" \
-  --targets web,pwa,social,ios,android \
+  --targets web,pwa,ios,android \
   --framework nextjs-app
 ```
 
-- `--pad-bg` は**透過が使えない面の地色**。apple-touch-icon、maskable、SNSアバター、
+- `--pad-bg` は**透過が使えない面の地色**。apple-touch-icon、maskable、
   App Storeアイコンで使う。意匠がプレート型（全面塗り）なら、その地色と同じ値にする。
   **透過の図案に、その図案と同じ色を指定すると真っ平らな板になる。** スクリプトが検出して止める
 - **`--mark-svg` は、プレート（地色）を除いたマークだけのSVG。プレート型で
@@ -109,7 +117,7 @@ python3 scripts/verify_icons.py --dist dist
 ```
 
 寸法・形式・透過・容量に加えて、**16pxで実際に描画してコントラストと最小線幅を測り**、
-maskableとSNSの安全域からインクがはみ出していないかを画素で数える。
+maskableとAndroid前景の安全域からインクがはみ出していないかを画素で数える。
 終了コードは 0=問題なし / 1=警告 / 2=不適合。
 
 **警告を残したまま納品しない。** 警告はどれも「その面で見え方が壊れる」という意味で、
@@ -137,13 +145,6 @@ maskableとSNSの安全域からインクがはみ出していないかを画素
 
 `<link>` は4行だけでよい。Windowsタイル、Safariのpinned tab用 `mask-icon`、
 `rel="shortcut"` はもう不要（`rel="shortcut"` はそもそも仕様上存在しない）。
-
-### SNS（`--targets social`）
-
-`avatar-1024.png`（不透明・1MB未満）を1枚。X・Instagram・note・YouTube・LINE・
-Facebook・GitHub・Slackの全部をこれ1枚で賄える。上限を決めているのはSlackの1024px、
-容量を決めているのはGitHubの1MB。**全社が円形または角丸に切るので、四隅に情報を置かない。**
-各社の実寸と、ヘッダー画像など別途作る必要があるものは `references/social.md`。
 
 ### アプリ（`--targets ios,android`）
 
@@ -186,12 +187,21 @@ Androidは adaptive icon のレイヤー一式と `ic_launcher.xml`、Play Store
 - **`--pad-bg` にマークと同じ色を渡さない。** 合成後が無地の板になる。ファイルは正常に見えるので、
   納品してから気づく類の事故。スクリプトが面積を測って止める
 
+## SNSでも使うなら
+
+意匠が決まって `verify_icons.py` が通ったら、そのマスターSVGを `sns-icon-builder` に渡す。
+X・YouTube・Instagram・note・LINE・GitHub・Slack のアイコンを、社ごとの寸法・容量・
+切り抜き形状に合わせて1枚ずつ焼き分ける。
+
+**切り抜きの形が社ごとに違う**（円の社と角丸四角の社がある）ので、`icon-builder` が出す
+どのファイルもそのままでは使えない。ただし意匠の段階で「四隅に情報を置かない」を
+守っていれば、そのまま渡せる。
+
 ## 参照ファイル
 
 - `references/hearing.md` — 作り始める前に埋める項目と、参考アイコンの引き出し方
 - `references/design.md` — 16pxで生き残る意匠の原則、実測値、検証で落ちたときの直し方
 - `references/frameworks.md` — フレームワーク別の設置方法と考え方（初学者向けの説明つき）
-- `references/social.md` — X/Instagram/note/YouTube/LINE等の実寸・容量・クロップ形状
 - `references/app.md` — iOS（Icon Composer / Liquid Glass）とAndroid（adaptive icon）の仕様
 - `scripts/preview_icons.py` — 候補を実寸と切り抜きで並べる
 - `scripts/build_icons.py` — マスター1枚から全形式を書き出す

@@ -9,12 +9,13 @@
   "plugins": [
     {
       "name": "studio",
-      "description": "画像・アイコン生成、PaaS 導入ガイド、新書レベルの解説記事づくり、要点だけに絞った社内ドキュメント作成",
+      "description": "画像・アイコン生成（favicon / アプリ / SNS）、PaaS 導入ガイド、新書レベルの解説記事づくり、要点だけに絞った社内ドキュメント作成",
       "source": "./",
       "strict": false,
       "skills": [
         "./skills/web-image-builder",
         "./skills/icon-builder",
+        "./skills/sns-icon-builder",
         "./skills/eli15",
         "./skills/paas-onboarding",
         "./skills/doc-brief"
