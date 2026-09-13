@@ -13,7 +13,7 @@ import argparse, base64, io, json, pathlib, sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from platforms import ORDER, CROP_LABEL, resolve, filename
-from snslib import contrast_ratio, ink_mask_opaque, mask_reach, die
+from snslib import contrast_ratio, ink_mask_opaque, mask_reach, stroke_at, die
 
 RADIUS = {"circle": "50%", "squircle": "22.37%"}
 # 一覧のほかに、実際によく目に入る中くらいの寸法も併記する（最小表示と同じなら省く）
@@ -44,7 +44,7 @@ def metrics(img, px: int, pad_bg=None):
     arr = np.array(small).reshape(-1, 3)
     best = max(contrast_ratio(tuple(p), bg) for p in np.unique(arr, axis=0))
     reach = mask_reach(mask)
-    return best, (reach[1] * px if reach else 0.0)
+    return best, (reach[1] * px if reach else 0.0), stroke_at(img, px, pad_bg)
 
 
 CSS = """
@@ -74,12 +74,16 @@ h1{font-size:18px;margin:0 0 6px}
 """
 
 
-def verdict(c, eff, px):
+def verdict(c, eff, sw, px):
     if c < 3.0:
         return "bad", f"{c:.1f}:1 塗り潰しに見える"
+    if sw < 1.0:
+        return "bad", f"線幅 {sw:.2f}px 消える / コントラスト {c:.1f}:1"
+    if sw < 1.4:
+        return "warn", f"線幅 {sw:.2f}px ぎりぎり / マーク {eff:.0f}px"
     if eff < px * 0.45:
         return "warn", f"{c:.1f}:1 / マーク {eff:.0f}px 小さい"
-    return "good", f"{c:.1f}:1 / マーク {eff:.0f}px"
+    return "good", f"{c:.1f}:1 / 線幅 {sw:.2f}px / マーク {eff:.0f}px"
 
 
 def avatar(data, size, crop, cls=""):
@@ -112,7 +116,7 @@ def build_html(cards):
             return "".join(out)
 
         light, darkstrip = strip(False), strip(True)
-        k, t = verdict(c["c"], c["eff"], d)
+        k, t = verdict(c["c"], c["eff"], c["sw"], d)
         parts.append(f"""
 <div class="card">
   <div class="name">{c['label']}</div>
@@ -152,11 +156,11 @@ def main():
         if not p.is_file():
             continue
         img = Image.open(p)
-        c, eff = metrics(img, spec["min_display"], pad_bg)
+        c, eff, sw = metrics(img, spec["min_display"], pad_bg)
         cards.append({"label": spec["label"], "file": p.name, "px": spec["px"],
                       "crop": spec["crop"], "min_display": spec["min_display"],
                       "where": spec["min_display_where"], "kb": p.stat().st_size / 1024,
-                      "data": b64(img), "c": c, "eff": eff})
+                      "data": b64(img), "c": c, "eff": eff, "sw": sw})
     if not cards:
         die(f"{dist} にアイコンが見つかりません。先に build_sns_icons.py を実行してください。")
 
@@ -183,7 +187,7 @@ def main():
         print(f"[preview] {shot}  ← Read ツールで自分でも見る")
     for c in cards:
         print(f"  {c['label']:<22} {c['min_display']:>3}px  コントラスト {c['c']:.1f}:1  "
-              f"マーク実寸 {c['eff']:.0f}px")
+              f"線幅 {c['sw']:.2f}px  マーク実寸 {c['eff']:.0f}px")
     print()
 
 

@@ -442,8 +442,8 @@ def mask_reach(mask):
     return (float(np.hypot(dx, dy).max() / half), float(np.maximum(dx, dy).max() / half))
 
 
-def stroke_px(mask, scale_to: float = 1.0) -> float:
-    """マスクの最小線幅をピクセルで返す。収縮を繰り返して面積が15%を切るまでの回数で測る。"""
+def _erosion_width(mask) -> float:
+    """マスクを収縮させ、面積が15%を切るまでの回数から最小線幅をピクセルで返す。"""
     import numpy as np
     from PIL import Image, ImageFilter
     m = Image.fromarray((mask.astype("uint8")) * 255)
@@ -451,9 +451,28 @@ def stroke_px(mask, scale_to: float = 1.0) -> float:
     if not total:
         return 0.0
     rounds, cur = 0, m
-    while rounds < 24:
+    while rounds < 40:
         cur = cur.filter(ImageFilter.MinFilter(3))
         rounds += 1
         if np.array(cur).sum() / 255 < total * 0.15:
             break
-    return (rounds * 2) * scale_to
+    return rounds * 2
+
+
+def stroke_at(img, display_px: int, bg=None, ss: int = 8) -> float:
+    """その表示寸法で、マークの最小線幅が何ピクセルに相当するかを返す。
+
+    **表示寸法そのもので収縮させてはいけない。** 収縮は1回あたり1px（両側で2px）しか
+    削れないので、20pxの画像を測ると最小値が2pxで頭打ちになり、「1px未満なら線が消える」
+    という判定が構造上まったく発火しない。実際に20pxで消えている線を合格にしてしまう。
+
+    そこで ss 倍に拡大した像で測り、最後に割り戻す。20px に対して ss=8 なら 0.25px
+    刻みで分かるので、0.75px の線を「消える」と正しく言える。
+    """
+    from PIL import Image
+    n = display_px * ss
+    big = img.convert("RGB").resize((n, n), Image.LANCZOS)
+    mask, _, solid = ink_mask_opaque(big, tol=40, bg=bg)
+    if not solid or mask is None or not mask.any():
+        return 0.0
+    return _erosion_width(mask) / ss

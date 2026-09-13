@@ -17,7 +17,7 @@ import argparse, json, pathlib, sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from platforms import PLATFORMS, ORDER, SAFE, CROP_LABEL, resolve, filename
-from snslib import (contrast_ratio, hex_rgb, border_color, ink_mask_opaque, mask_reach, stroke_px)
+from snslib import (contrast_ratio, hex_rgb, border_color, ink_mask_opaque, mask_reach, stroke_at)
 
 PAGE_BG = {"ライトUI": (255, 255, 255), "ダークUI": (21, 22, 24)}
 
@@ -116,19 +116,24 @@ def check_one(rep, dist: pathlib.Path, name: str, spec: dict, pad_bg=None):
     arr = np.array(small).reshape(-1, 3)
     best = max(contrast_ratio(tuple(px), sbg) for px in np.unique(arr, axis=0))
     eff = (mask_reach(smask)[1] if mask_reach(smask) else 0) * d
-    sw = stroke_px(smask)
+    sw = stroke_at(img, d, pad_bg or bg)
     if best < 3.0:
         rep.fail(f"{label} {d}px可読性",
                  f"地色とのコントラストが {best:.1f}:1 — {where} では塗り潰しに見えます")
     elif sw < 1.0:
         rep.fail(f"{label} {d}px可読性",
-                 f"最小線幅が {d}px 換算で約 {sw:.2f}px — {where} で線が消えます")
+                 f"最小線幅が {d}px 表示で約 {sw:.2f}px — {where} では線が消えます。"
+                 "意匠の線を太くするか、要素を減らしてください")
+    elif sw < 1.4:
+        rep.warn(f"{label} {d}px可読性",
+                 f"最小線幅が {d}px 表示で約 {sw:.2f}px — {where} でぎりぎりです。"
+                 "1.5px を目標に線を太くしてください")
     elif eff < d * 0.45:
         rep.warn(f"{label} {d}px可読性",
                  f"マークの実寸が {eff:.0f}px しかありません（{where} の {d}px 中）— 小さすぎます")
     else:
         rep.ok(f"{label} {d}px可読性",
-               f"{where} {d}px / コントラスト {best:.1f}:1 / 線幅 {sw:.1f}px / マーク {eff:.0f}px")
+               f"{where} {d}px / コントラスト {best:.1f}:1 / 線幅 {sw:.2f}px / マーク {eff:.0f}px")
 
 
 def check_edge(rep, dist: pathlib.Path, rows, pad_bg=None):
