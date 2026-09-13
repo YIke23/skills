@@ -136,7 +136,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dist", required=True, help="build_sns_icons.py の出力ディレクトリ")
-    ap.add_argument("--out", default="preview", help="出力の接頭辞")
+    ap.add_argument("--out", default="preview",
+                    help="出力の接頭辞（preview.html / preview.png が出る）。"
+                         "既存のディレクトリを渡した場合はその中に preview.* を書く")
     a = ap.parse_args()
     from PIL import Image
 
@@ -164,7 +166,12 @@ def main():
     if not cards:
         die(f"{dist} にアイコンが見つかりません。先に build_sns_icons.py を実行してください。")
 
-    hp = pathlib.Path(f"{a.out}.html")
+    # 接頭辞のつもりでディレクトリを渡されることが多いので、その場合は中に入れる。
+    # そうしないと dist/ の隣に dist.html が転がって、納品物に紛れる。
+    stem = pathlib.Path(a.out)
+    if stem.is_dir():
+        stem = stem / "preview"
+    hp = pathlib.Path(f"{stem}.html")
     hp.parent.mkdir(parents=True, exist_ok=True)
     hp.write_text(build_html(cards), encoding="utf-8")
     try:
@@ -175,9 +182,9 @@ def main():
                             device_scale_factor=2)
             pg.goto(hp.resolve().as_uri())
             pg.wait_for_timeout(250)
-            pg.screenshot(path=f"{a.out}.png", full_page=True)
+            pg.screenshot(path=f"{stem}.png", full_page=True)
             b.close()
-        shot = f"{a.out}.png"
+        shot = f"{stem}.png"
     except Exception as e:
         shot = None
         print(f"[preview] PNGの書き出しに失敗しました（HTMLは出ています）: {e}", file=sys.stderr)
