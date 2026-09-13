@@ -256,24 +256,6 @@ def main():
                 if not mj.get(k): rep.warn("manifest", f"{k} が空です")
 
     # ---------------------------------------------------------------- 面ごと
-    av = dist / "social" / "avatar-1024.png"
-    if av.is_file():
-        img = need("social/avatar-1024.png", 1024, opaque=True)
-        if img is not None:
-            n = av.stat().st_size
-            if n > 1_000_000 and not (dist / "social" / "avatar-1024.jpg").is_file():
-                rep.fail("SNSアバター", f"{n/1024:.0f} KB — GitHub の上限 1MB を超えています")
-            m, solid = ink_of(img, rep, "SNSアバター 安全域")
-            oc = frac_outside_circle(m, 0.5)
-            hard = rep.fail if solid else rep.warn
-            if oc > 0.005:
-                hard("SNSアバター 円形クロップ",
-                         f"インクの {oc*100:.1f}% が内接円の外 — X/Instagram/note/YouTube/LINE で四隅が切れます")
-            elif frac_outside_square(m, 0.80) > 0.02:
-                rep.warn("SNSアバター 安全域", "インクが中央80%の外にはみ出しています。小さく表示されると窮屈に見えます")
-            else:
-                rep.ok("SNSアバター", f"{n/1024:.0f} KB / 円形クロップ耐性あり")
-
     ios = dist / "ios" / "AppIcon-1024.png"
     if ios.is_file():
         need("ios/AppIcon-1024.png", 1024, no_alpha=True)

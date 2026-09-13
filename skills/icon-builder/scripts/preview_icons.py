@@ -2,7 +2,7 @@
 """preview_icons.py — 候補SVGを「実際に使われる寸法と切り抜き」で並べて見せる。
 
 アイコンの良し悪しは 512px のプレビューでは判断できない。判断できるのは
-タブの16px、ホーム画面の丸/角丸、SNSの円形クロップ。それを一枚にまとめる。
+タブの16px、ホーム画面の角丸、Androidランチャーの円形マスク。それを一枚にまとめる。
 
   python3 preview_icons.py --svg a.svg b.svg c.svg --out preview --labels "A案,B案,C案"
 
@@ -98,10 +98,10 @@ def build_html(cards, pad_bg="#dddddd"):
   <div class="strip l"><div class="row">{row_l}</div>{zl}</div>
   <div class="sec">暗いタブ（原寸 / 16pxを4倍）</div>
   <div class="strip d"><div class="row">{row_d}</div>{zd}</div>
-  <div class="sec">ホーム画面 / SNS の切り抜き</div>
+  <div class="sec">ホーム画面のマスク</div>
   <div class="masks">
     <div><div class="sq"><img src="{c['home']}"></div><div class="cap">iOS 角丸</div></div>
-    <div><div class="ci"><img src="{c['home']}"></div><div class="cap">SNS 円形</div></div>
+    <div><div class="ci"><img src="{c['home']}"></div><div class="cap">Android 円形</div></div>
     <div><img src="{c['big']}" width="72" height="72"><div class="cap">原画</div></div>
   </div>
   <div class="metric">16pxコントラスト 明:<span class="{kl}">{tl}</span> /

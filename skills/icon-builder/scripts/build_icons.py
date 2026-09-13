@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
-"""build_icons.py — マスターSVG 1枚から、favicon / PWA / iOS / Android / SNS の一式を書き出す。
+"""build_icons.py — マスターSVG 1枚から、favicon / PWA / iOS / Android の一式を書き出す。
 
 面ごとに要求が正反対なのが、この作業が地味に厄介な理由:
   favicon は透過可・16pxで読めること、apple-touch-icon は透過不可（iOSが黒く塗る）、
   maskable は中央の円しか見えない保証がなく、App Store はアルファチャンネルを拒否する。
 マスターは1枚のまま、面ごとに合成ルールだけを変えるのがこのスクリプトの役割。
 
+SNSアカウント用のアイコンは sns-icon-builder が担当する。各社で切り抜かれる形が違い、
+社ごとに縮尺を変えて焼き分ける必要があるため、ここでは扱わない。
+
   python3 build_icons.py --svg master.svg --out dist --name "Mediowl" \
-      --pad-bg "#1c56d6" --targets web,pwa,social,ios,android --framework nextjs-app
+      --pad-bg "#1c56d6" --targets web,pwa,ios,android --framework nextjs-app
 """
 import argparse, json, pathlib, re, sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from iconlib import (die, warn, read_svg, get_viewbox, outline_text, optimize_svg,
                      Renderer, ink_bbox, is_full_bleed, compose, save_png, optimize_png, hex_rgb)
 
-ALL_TARGETS = ["web", "pwa", "social", "ios", "android"]
+ALL_TARGETS = ["web", "pwa", "ios", "android"]
 
 FRAMEWORKS = {
 "html": ("素のHTML / Laravel Blade / EJS など", """\
@@ -180,7 +183,6 @@ def main():
     ap.add_argument("--apple-pad", type=float, default=0.10, help="apple-touch-icon の余白率")
     ap.add_argument("--maskable-scale", default="auto",
                     help="auto=安全円に必ず収める / 1.0=全面バッジ意匠として扱う / 任意の比率")
-    ap.add_argument("--social-scale", type=float, default=0.80, help="SNSアバターの内容占有率")
     ap.add_argument("--android-logo-dp", type=float, default=60.0, help="108dp中のロゴ寸法(48〜66)")
     ap.add_argument("--legacy-radius", type=float, default=0.20, help="Android旧アイコンの角丸率")
     a = ap.parse_args()
@@ -297,20 +299,6 @@ def main():
             report["files"].append({"path": "web/manifest.webmanifest", "px": None,
                                     "bytes": mf.stat().st_size, "opaque": False})
             print(f"  {'web/manifest.webmanifest':<46} {'json':>7}  {mf.stat().st_size/1024:6.1f} KB")
-
-        # ---------------------------------------------------------- social
-        if "social" in targets:
-            # SNSは全社が円形に切る。透過の図案は外接円が内接円に収まるところまで縮める。
-            frac = 1.0 if full_bleed else min(a.social_scale, fit_circle(0.92))
-            av = compose(r, 1024, frac, a.pad_bg, None if full_bleed else bbox)
-            assert_visible(av, "social/avatar-1024.png")
-            emit(av, "social/avatar-1024.png", opaque=True, meta={"role": "avatar"})
-            p = out / "social" / "avatar-1024.png"
-            if p.stat().st_size > 1_000_000:
-                from PIL import Image
-                Image.open(p).convert("RGB").save(out / "social" / "avatar-1024.jpg",
-                                                  "JPEG", quality=90, optimize=True)
-                warn("PNGが1MBを超えました（GitHubの上限）。JPG版も出力しました。")
 
         # ---------------------------------------------------------- iOS
         if "ios" in targets:

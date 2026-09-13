@@ -1,0 +1,52 @@
+{
+  "skill_name": "sns-icon-builder",
+  "evals": [
+    {
+      "id": 0,
+      "name": "subset-four-services",
+      "prompt": "うちの会社のロゴをSVGで用意しました（INPUTS/mediowl.svg、ブランドカラーは #1c56d6）。X・note・YouTube・Instagram のアカウント用のアイコンを作ってください。出力は OUTDIR に置いてください。",
+      "expected_output": "4サービスぶんのアイコンが、各社の推奨寸法（X=400 / note=330 / YouTube=800 / Instagram=1080）で、不透明なPNGとして1枚ずつ出る。依頼していないLINE/GitHub/Slackは出さない。",
+      "files": [
+        "inputs/mediowl.svg"
+      ],
+      "assertions": [
+        "依頼した4サービスぶんのアイコンが、各社の推奨寸法(X=400/note=330/YouTube=800/Instagram=1080)で揃っている",
+        "依頼していないLINE/GitHub/Slack用のファイルを出していない",
+        "書き出したアイコンにアルファチャンネルが無い（透過のまま上げていない）",
+        "円形クロップの安全域（内接円）からインクがはみ出していない"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "github-org-and-slack",
+      "prompt": "プロダクトのアイコンSVGが INPUTS/kotori.svg にあります。社内のSlackと、GitHubのOrganizationのアイコンをこれに変えたいです。それぞれ用の画像を OUTDIR に作ってください。",
+      "expected_output": "Slack(512)とGitHub(500)のアイコンが出る。どちらも角丸四角で切られる面なので、円前提で縮めず角丸の安全域に合わせる。両方とも1MB以下。上げ方の説明がつく。",
+      "files": [
+        "inputs/kotori.svg"
+      ],
+      "assertions": [
+        "Slack(512px)とGitHub(500px)のアイコンが両方ある",
+        "GitHubとSlackの両方が1MB以下",
+        "GitHubがOrganization=角丸四角として扱われている（縦横到達80%以上、またはbuild-reportでcrop=squircle）",
+        "書き出したアイコンにアルファチャンネルが無い",
+        "上げ方の案内が成果物か返答に含まれている"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "all-seven-thin-design",
+      "prompt": "INPUTS/hane.svg でSNSアカウントを全部揃えたいです（YouTube、X、Instagram、note、LINE公式、GitHub、Slack）。地色は #14532d で。OUTDIR に出力してください。",
+      "expected_output": "7サービスぶんを書き出したうえで、GitHub/Slackの20px表示で線が消えることを面の名前と数値つきで報告する。マスターSVGは書き換えず、進めるか作り直すかをユーザーに問う。",
+      "files": [
+        "inputs/hane.svg"
+      ],
+      "assertions": [
+        "7サービスぶんすべてのアイコンが各社の推奨寸法で揃っている",
+        "指定された地色 #14532d で不透明に塗られている",
+        "書き出したアイコンにアルファチャンネルが無い",
+        "最小表示（GitHub/Slackの20px）で線が消えることを、面の名前と数値つきで報告している",
+        "マスターSVGを書き換えず、このまま進めるか作り直すかをユーザーに問うている"
+      ]
+    }
+  ]
+}
