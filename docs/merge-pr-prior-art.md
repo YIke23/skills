@@ -40,6 +40,16 @@ find ~/.claude/plugins -iname "*clean_gone*"
 # → .../claude-plugins-official/commit-commands/*/commands/clean_gone.md
 ```
 
+> **2026-09-13 追記: この取りこぼしは修正した。** `search_local.sh` は `commands/*.md`
+> も走査するようになった（[#24](https://github.com/YIke23/skills/pull/24)）。コマンドの
+> frontmatter には `name` が無いため、`description` とファイル名の両方で照合する。
+> 集計行に「コマンド N 本」が出て、候補には `（スキル）` / `（スラッシュコマンド）` が付く。
+> **上の検索語をそのまま渡すと `/clean_gone` が候補に出る（exit 1）。**
+> 根は照合ではなく探す場所の集め方にあった。`skills/` という名前のディレクトリしか
+> 拾っていなかったので、`skills/` を持たず `commands/` だけの `commit-commands` は
+> 走査の対象に入る前から視界の外にいた。0 件の内訳（`探した場所 34 / SKILL.md 251 本`）は
+> 2026-09-12 時点の記録としてそのまま残してある。
+
 自作スキル側（`~/dev/skills/skills/`）には、マージも後始末も担当するものは無い。
 `create-pr` と `release-pr` は本文中で「このスキルはマージしない」と明示的に持ち場から外している。
 
