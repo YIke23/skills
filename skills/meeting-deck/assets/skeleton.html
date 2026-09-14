@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>資料のタイトル</title>
+<style>
+/* ここに assets/deck.css の中身をそのまま貼る。外部から読み込まない。 */
+</style>
+</head>
+<body>
+
+<!-- 節の索引。中身は下のスクリプトが data-title から作る。 -->
+<nav class="rail" id="rail" aria-label="節の索引"></nav>
+
+<main class="deck">
+
+  <section class="panel" id="s0" data-title="表紙">
+    <span class="eyebrow">2026-09-14 ・ 定例会</span>
+    <h1>資料のタイトル</h1>
+    <p class="lede">この資料が何のためのものかを1〜2文で。</p>
+  </section>
+
+  <!-- 以降、md の h2 が1節ぶんの .panel になる。data-title は索引に出る短い名前。 -->
+  <section class="panel" id="s1" data-title="現状">
+    <h2><span class="n">1</span>節の見出し</h2>
+
+    <p>本文。図が引き受けた内容は、ここには書かない。</p>
+
+    <figure>
+      <svg viewBox="0 0 960 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="図の説明">
+        <!-- references/figures.md の型から貼る -->
+      </svg>
+      <figcaption>図だけを見た人が、何の図か分かる1行。</figcaption>
+    </figure>
+  </section>
+
+</main>
+
+<script>
+// 索引の生成と、節の移動。外部ライブラリは使わない。
+(() => {
+  const panels = [...document.querySelectorAll('.panel')];
+  const rail = document.getElementById('rail');
+  const links = panels.map((p, i) => {
+    const a = document.createElement('a');
+    a.href = '#' + p.id;
+    a.textContent = i === 0 ? (p.dataset.title || '表紙') : i + '. ' + (p.dataset.title || '');
+    rail.append(a);
+    return a;
+  });
+
+  // いま映っている節を索引に反映する。会議中にスクロールで見失っても現在地が分かる。
+  const io = new IntersectionObserver(es => {
+    for (const e of es) {
+      if (!e.isIntersecting) continue;
+      const i = panels.indexOf(e.target);
+      links.forEach((a, j) => a.setAttribute('aria-current', String(i === j)));
+      links[i].scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }
+  }, { rootMargin: '-25% 0px -65% 0px' });
+  panels.forEach(p => io.observe(p));
+
+  // ← → で節を移動する。多くのプレゼンター（クリッカー）がこのキーを送る。
+  // ↑ ↓ は既定のスクロールを奪わない。奪うと、図の中を少し送りたいときに困る。
+  const soft = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let pending = null, clear;
+  addEventListener('keydown', ev => {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    const d = { ArrowRight: 1, ArrowLeft: -1, j: 1, k: -1 }[ev.key];
+    if (!d) return;
+    // 送り先を覚えておく。スクロール中は現在地がまだ動いていないので、
+    // 座標から数え直すと、続けて押した2回目が1回目と同じ節を指してしまう。
+    // クリッカーで2回続けて押したぶんが失われる、という形で会議中に出る。
+    const y = innerHeight * 0.3;
+    const seen = panels.findIndex(p => p.getBoundingClientRect().bottom > y);
+    const base = pending ?? (seen < 0 ? panels.length - 1 : seen);
+    const i = Math.min(panels.length - 1, Math.max(0, base + d));
+    pending = i;
+    clearTimeout(clear);
+    clear = setTimeout(() => { pending = null; }, 700);
+    panels[i].scrollIntoView({ behavior: soft ? 'smooth' : 'auto', block: 'start' });
+    ev.preventDefault();
+  });
+})();
+</script>
+</body>
+</html>
