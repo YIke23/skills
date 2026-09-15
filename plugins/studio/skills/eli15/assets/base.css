@@ -1,9 +1,15 @@
-/* eli15 base stylesheet — Bauhaus
+/* eli15 base stylesheet — Warm Paper
  *
- * 色は5つしかない。赤・黄・青・黒・白。中間色も淡色も灰色も使わない。
- * 面は必ずこの5つのどれかで塗り、階調ではなく「色そのもの」で区別する。
+ * 長い解説を通して読むための組版。読み手を驚かせないことを最優先にしている。
  *
- * 色はすべてライト/ダーク両方で 4.5:1 以上を確認済み。値を変えると崩れる。
+ * 地はわずかに暖色へ寄せた白(#FCFBF9)で、純白より光量が低い。本文は純黒ではなく
+ * #26231F。純白×純黒は 21:1 あってハレーションを起こし、長文で目が滑る。
+ * ここは 15:1 で、AA(4.5:1)を大きく超えたまま、まぶしさだけを落としている。
+ *
+ * 面を箱で囲って区切らない。区切りは余白と細い罫線が引き受ける。
+ * 箱を減らすと1画面あたりの線の本数が減り、読む前に視線が引っかからなくなる。
+ *
+ * 色はすべてライト/ダーク両方で測ってある。値を変えると崩れる。
  * 変えたくなったら check_contrast.py で測り直してから変えること。
  *
  * 使い方: この中身を <style> にそのまま貼り、必要な分だけ足す。
@@ -13,152 +19,160 @@
 :root{
   color-scheme:light dark;
 
-  --paper:#FFFFFF;       /* 地。ページ全体 */
-  --card:#FFFFFF;        /* カードの塗り。地と同色で、境界は罫線が引く */
-  --ink:#000000;         /* 罫線と本文。すべての線はこの一色 */
+  --paper:#FCFBF9;          /* 地。ページ全体 */
+  --card:#FFFFFF;           /* カードの塗り。地よりわずかに明るい */
+  --ink:#26231F;            /* 本文 */
+  --sub:#5F5A53;            /* 補助。キャプション・出典・注記 */
 
-  --red:#D42A20;         /* 三原色。面にも、地の上の強調文字にも使える */
-  --yellow:#FFD500;
-  --blue:#0057B8;
+  /* 色は1系統だけ持つ。青緑寄りの青で、リンクと「ここが要点」を兼ねる。
+   * 色数を増やすほど、どの色が何を意味するのかを読み手が覚える必要が出る。 */
+  --accent:#1B5E8C;
+  --accent-soft:#E8F1F7;    /* 強調の面。ベタ塗りではなく淡い地 */
+  --on-accent-soft:#0E3B5A; /* 強調の面の上の見出し */
 
-  --on-red:#FFFFFF;      /* 赤の面の上に置く文字 */
-  --on-yellow:#000000;   /* 黄の面の上は暗い文字のみ。明色は 4.5:1 を絶対に通らない */
-  --on-blue:#FFFFFF;     /* 青の面の上に置く文字 */
+  --warn:#8A5A00;           /* 注意。「ここでつまずく」 */
+  --warn-soft:#FBF3E4;
+  --danger:#B3261E;         /* 危険。取り返しがつかないことだけに使う */
+  --danger-soft:#FAEDEC;
 
-  --bd:3px;              /* 標準の罫線 */
-  --bd-x:10px;           /* 章の切れ目に引く太い罫線 */
+  --line:#E3DFD8;           /* 罫線。境界を示すが、主張はしない */
+  --line-strong:#8E887F;    /* 図の輪郭と矢印。図形は意味を持つので 3:1 を確保する */
+
+  --measure:42em;           /* 1行の長さ。17px で日本語約42字 */
+  --r:4px;
 }
 
-/* ダークでも三原色であることは変えない。明度だけ、黒地で 4.5:1 を通る側へ振る。
- * 黄は元のまま通るので動かさない。赤と青は明るい側に置き、載せる文字が黒に反転する。 */
+/* ダークは反転ではなく作り直し。地を真っ黒にすると、今度は白文字が滲む。
+ * #171614 まで上げると、明るい室内でも暗い室内でも同じように読める。 */
 @media (prefers-color-scheme:dark){
   :root{
-    --paper:#000000; --card:#000000; --ink:#FFFFFF;
-    --red:#FF6B57; --yellow:#FFD500; --blue:#7FB2FF;
-    --on-red:#000000; --on-yellow:#000000; --on-blue:#000000;
+    --paper:#171614; --card:#201F1C; --ink:#EDE9E3; --sub:#A8A199;
+    --accent:#8FC0DF; --accent-soft:#1D2A32; --on-accent-soft:#D6EAF6;
+    --warn:#DCA83C; --warn-soft:#2A2317;
+    --danger:#F08B80; --danger-soft:#2B1D1B;
+    --line:#35322E; --line-strong:#7A736A;
   }
 }
 
 *{box-sizing:border-box}
 
-/* 幾何学的サンセリフを欧文に当て、和文は既存のゴシックに落とす。
- * Bauhaus の書体は円と直線でできているので、欧文だけでも当たると印象が変わる。 */
+/* 欧文はシステムのUIフォント、和文は Hiragino Sans に落とす。
+ * 外部フォントは読み込まない——HTML1枚で完結させる約束があるので、
+ * Google Fonts を指定すると、その1行のためにオフラインで書体が崩れる。 */
 body{
   margin:0; background:var(--paper); color:var(--ink);
-  font-family:Futura,"Century Gothic","Avenir Next","Helvetica Neue",
-              "Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,
-              "Noto Sans JP",Arial,sans-serif;
-  font-size:17px; line-height:1.8;
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",
+              "Hiragino Sans","Hiragino Kaku Gothic ProN",
+              "BIZ UDPGothic",Meiryo,sans-serif;
+  font-size:17px; line-height:1.95;
   -webkit-font-smoothing:antialiased;
 }
 
-/* 1行の長さ。日本語で約38字、英字で約76字。
- * どちらも読みやすい範囲(英字は45〜90字、目標66字)に収まる。 */
-.sheet{max-width:38em; margin:0 auto; padding:2.5rem 1.5rem 5rem}
+.sheet{max-width:var(--measure); margin:0 auto; padding:3rem 1.4rem 5rem}
 
-/* ── 三つの形 ───────────────────────────────────────────
- * Kandinsky の対応（赤＝四角・黄＝三角・青＝円）をそのまま使う。
- * 中身はインラインSVGで、下の .box-r / .box-y / .box-c で塗る。
- * CSS の背景色で描くと黒の輪郭が付けられず、白地の黄が消える。
- * 表紙の頭に1つ置くと、そのあと出てくる色の役割が読み手の中で固定される。 */
-.flag{display:block; width:132px; height:40px; margin:0 0 1.25rem}
-
-/* 大文字は短いラベルだけ。長い連続は可読性を大きく落とす。
- * 角は丸めない。Bauhaus の面は矩形で、丸は円としてだけ現れる。 */
+/* 記事の分類。帯で塗らず、小さな文字で置く。
+ * 塗ると本文より先に目に入ってしまい、見出しの前にもう一段階ができる。 */
 .eyebrow{
-  display:inline-block; margin:0 0 1rem;
-  font-size:.72rem; font-weight:700; letter-spacing:.2em;
-  text-transform:uppercase; color:var(--on-red);
-  background:var(--red); padding:.4rem 1rem;
+  display:inline-block; margin:0 0 .5rem;
+  font-size:.76rem; font-weight:700; letter-spacing:.06em; color:var(--sub);
 }
 
 h1{
-  font-size:2.05rem; line-height:1.3; font-weight:900;
-  letter-spacing:-.01em; margin:.6rem 0 1.5rem; color:var(--ink);
-  padding-bottom:1rem; border-bottom:var(--bd-x) solid var(--ink);
+  font-size:1.9rem; line-height:1.5; font-weight:700;
+  margin:.4rem 0 1.2rem; color:var(--ink);
+  font-feature-settings:"palt" 1;   /* 和文の字間を詰める。見出しだけに効かせる */
+  text-wrap:balance;
 }
-/* 階層はサイズだけで作らない。面の色と太さも一緒に動かす。 */
+
+/* 節の切れ目は、太い罫や色面ではなく余白で作る。
+ * 上に 3.4rem 空けてから細い罫を1本引き、短いアクセントの線を置く。
+ * 「次の話が始まった」と分かればよく、それ以上の強さは要らない。 */
 h2{
-  font-size:1.2rem; line-height:1.55; font-weight:800;
-  color:var(--on-yellow); background:var(--yellow);
-  margin:0 0 1rem; padding:.55rem .9rem;
-  border:var(--bd) solid var(--ink);
+  font-size:1.22rem; line-height:1.65; font-weight:700; color:var(--ink);
+  margin:3.4rem 0 1.2rem; padding-top:1.1rem;
+  border-top:1px solid var(--line);
+  font-feature-settings:"palt" 1;
 }
-/* 赤の四角を頭に置く。見出しであることを、大きさではなく形で示す。 */
-h3{
-  font-size:1rem; font-weight:800; margin:1.4rem 0 .6rem; color:var(--ink);
-  display:flex; align-items:baseline; gap:.5rem;
+h2::before{
+  content:""; display:block; width:2.2rem; height:2px;
+  background:var(--accent); margin-bottom:.9rem;
 }
-h3::before{content:""; flex:0 0 auto; width:.62em; height:.62em; background:var(--red)}
 
-p{margin:0 0 1.1rem; text-align:left}   /* 両端揃えにしない */
-.lede{font-size:1.09rem; line-height:1.9}
+h3{font-size:1rem; font-weight:700; margin:2rem 0 .5rem; color:var(--ink)}
 
-/* 影は付けない。Bauhaus の面は紙に刷られていて、浮いていない。
- * 区切りは罫線と色面が引き受ける。 */
+p{margin:0 0 1.15rem; text-align:left}   /* 両端揃えにしない。和欧混在で字間が暴れる */
+.lede{font-size:1.08rem}
+ul,ol{margin:0 0 1.15rem; padding-left:1.35em}
+li{margin:0 0 .45rem}
+
+/* カードは「本文の流れから外して読む塊」にだけ使う。
+ * 影は付けない。浮かせると、そこだけ別のUIに見える。 */
 .card{
-  background:var(--card); border:var(--bd) solid var(--ink);
-  padding:1.6rem; margin:2rem 0;
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+  padding:1.3rem 1.4rem; margin:1.8rem 0;
 }
 .card > :first-child{margin-top:0}
 .card > :last-child{margin-bottom:0}
-.card.accent{background:var(--yellow); color:var(--on-yellow)}
-.card.accent b,.card.accent h3{color:var(--on-yellow)}
-.card.accent h3::before{background:var(--ink)}
-.card.blue{background:var(--blue); color:var(--on-blue)}
-.card.blue b,.card.blue h3{color:var(--on-blue)}
-.card.blue h3::before{background:var(--on-blue)}
 
-figure{margin:2rem 0; padding:0}
+/* 強調のカードは枠を消し、淡い地だけで区別する。
+ * 枠と地の両方を変えると、そのカードだけ二重に囲まれて見える。 */
+.card.accent{background:var(--accent-soft); border-color:transparent}
+.card.accent h3{color:var(--on-accent-soft)}
+
+/* 注意書き。左の縦線1本で十分で、全周を囲うと本文より重くなる。 */
+.warn{
+  background:var(--warn-soft); border-left:3px solid var(--warn);
+  border-radius:0 var(--r) var(--r) 0;
+  padding:1rem 1.15rem; margin:1.6rem 0;
+}
+.warn b{color:var(--warn)}
+.warn.danger{background:var(--danger-soft); border-left-color:var(--danger)}
+.warn.danger b{color:var(--danger)}
+
+figure{margin:2.2rem 0; padding:0}
 figure svg{
   width:100%; height:auto; display:block;
-  background:var(--card); border:var(--bd) solid var(--ink);
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r);
 }
-figcaption{
-  font-size:.82rem; line-height:1.7; color:var(--blue);
-  margin-top:.9rem; padding-left:.7rem;
-  border-left:var(--bd-x) solid var(--blue);
-}
+figcaption{font-size:.85rem; line-height:1.75; color:var(--sub); margin-top:.8rem}
 
 /* ── 図の色 ─────────────────────────────────────────────
  * SVGの色はここから引く。属性に直書きするとダークで取り残される。
+ * 図形は装飾ではなく意味を持つので、輪郭は本文と同じ 3:1 を確保してある。
  * 面（.box-*）と、その面の上に置く文字（.t-*）は必ず対で使う。 */
-svg .box   {fill:var(--card);   stroke:var(--ink); stroke-width:2.5}
-svg .box-y {fill:var(--yellow); stroke:var(--ink); stroke-width:2.5}
-svg .box-r {fill:var(--red);    stroke:var(--ink); stroke-width:2.5}
-svg .box-c {fill:var(--blue);   stroke:var(--ink); stroke-width:2.5}
-svg .t     {fill:var(--ink)}      /* 地（.box を含む）の上の文字 */
-svg .t-sub {fill:var(--blue)}     /* 地の上の補助文字。色面の上には置かない */
-svg .t-red {fill:var(--red)}      /* 地の上の強調。色面の上には置かない */
-svg .t-y   {fill:var(--on-yellow)}  /* 黄の面の上 */
-svg .t-r   {fill:var(--on-red)}     /* 赤の面の上 */
-svg .t-c   {fill:var(--on-blue)}    /* 青の面の上 */
-svg .ln    {stroke:var(--ink); stroke-width:2.5; fill:none}
-svg .ar    {fill:var(--ink)}
+svg .box   {fill:var(--card);        stroke:var(--line-strong); stroke-width:1.5}
+svg .box-a {fill:var(--accent-soft); stroke:var(--accent);      stroke-width:1.5}
+svg .box-w {fill:var(--warn-soft);   stroke:var(--warn);        stroke-width:1.5}
+svg .t     {fill:var(--ink)}             /* 地・.box の上の文字 */
+svg .t-sub {fill:var(--sub)}             /* 補助の文字 */
+svg .t-a   {fill:var(--on-accent-soft)}  /* .box-a の上 */
+svg .t-w   {fill:var(--warn)}            /* .box-w の上 */
+svg .ln    {stroke:var(--line-strong); stroke-width:1.5; fill:none}
+svg .ar    {fill:var(--line-strong)}
 
+/* 参考文献。カードにせず、細い罫で区切った一覧にする。 */
 .further{margin:1.2rem 0 0; padding:0; list-style:none}
 .further li{
-  border:var(--bd) solid var(--ink); background:var(--card);
-  border-left:var(--bd-x) solid var(--blue);
-  padding:1rem 1.1rem; margin:0 0 1rem; font-size:.95rem; line-height:1.75;
+  border-bottom:1px solid var(--line);
+  padding:1rem 0; margin:0; font-size:.95rem; line-height:1.8;
 }
-.further b{display:block; font-weight:800; margin-bottom:.25rem; color:var(--red)}
-.further span{color:var(--blue)}
+.further li:last-child{border-bottom:0}
+.further b{display:block; font-weight:700; margin-bottom:.2rem; color:var(--ink)}
+.further span{color:var(--sub)}
 
-a{color:var(--blue); text-decoration:underline;
-  text-decoration-thickness:2px; text-underline-offset:.15em}
+a{color:var(--accent); text-decoration:underline; text-underline-offset:.18em}
 
-/* 罫線が黒一色なので、フォーカスを同じ色で描くと埋もれる。赤で外側に出す。 */
-:focus-visible{outline:3px solid var(--red); outline-offset:3px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
 
 @media (prefers-reduced-motion:no-preference){
-  .sheet{animation:rise .45s ease-out both}
-  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .sheet{animation:rise .4s ease-out both}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 }
 
 @media (max-width:480px){
-  :root{--bd-x:8px}
-  .sheet{padding:1.8rem 1.1rem 3.5rem}
+  body{font-size:16px}
+  .sheet{padding:2rem 1.1rem 3.5rem}
   h1{font-size:1.6rem}
-  .card,.further li{padding:1.15rem}
+  h2{margin-top:2.6rem}
+  .card{padding:1.15rem}
 }

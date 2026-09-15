@@ -31,37 +31,59 @@ AA_TEXT = 4.5          # 本文・図中の文字
 AA_NONTEXT = 3.0       # 枠線など、文字でない要素
 
 # base.css が保証している「文字色 × 下地」の組。値は変わっても、組は設計そのもの。
-# 面は赤・黄・青・黒・白の5つしかないので、組もその範囲に閉じている。
 CSS_PAIRS = [
-    ("本文 body",                     "--ink",       "--paper"),
-    ("カード内の本文 .card",           "--ink",       "--card"),
-    ("見出し h2（黄の上）",            "--on-yellow", "--yellow"),
-    ("ラベル .eyebrow（赤の上）",      "--on-red",    "--red"),
-    ("黄カード .card.accent",          "--on-yellow", "--yellow"),
-    ("青カード .card.blue",            "--on-blue",   "--blue"),
-    ("見出し h3",                     "--ink",       "--paper"),
-    ("見出し h3（カード内）",          "--ink",       "--card"),
-    (".further b（赤）",               "--red",       "--card"),
-    ("figcaption（青）",               "--blue",      "--paper"),
-    (".further span（青）",            "--blue",      "--card"),
-    ("リンク a",                      "--blue",      "--paper"),
-    ("リンク a（カード内）",           "--blue",      "--card"),
-    ("図の補助文字 svg .t-sub",        "--blue",      "--card"),
-    ("図の強調文字 svg .t-red",        "--red",       "--card"),
-    ("フォーカスの輪郭 :focus-visible", "--red",       "--paper"),
+    ("本文 body",                     "--ink",  "--paper"),
+    ("カード内の本文 .card",           "--ink",  "--card"),
+    ("見出し h1/h2/h3",               "--ink",  "--paper"),
+    ("補助文字 figcaption",            "--sub",  "--paper"),
+    ("補助文字（カード内）",            "--sub",  "--card"),
+    ("リンク a",                      "--accent", "--paper"),
+    ("リンク a（カード内）",           "--accent", "--card"),
+    ("強調カードの本文 .card.accent",  "--ink",  "--accent-soft"),
+    ("強調カードの見出し h3",          "--on-accent-soft", "--accent-soft"),
+    ("強調カードのリンク",             "--accent", "--accent-soft"),
+    ("注意書きの本文 .warn",           "--ink",  "--warn-soft"),
+    ("注意書きの強調 .warn b",         "--warn", "--warn-soft"),
+    ("危険の本文 .warn.danger",        "--ink",  "--danger-soft"),
+    ("危険の強調 .warn.danger b",      "--danger", "--danger-soft"),
+    ("図の文字 svg .t",               "--ink",  "--card"),
+    ("図の補助文字 svg .t-sub",        "--sub",  "--card"),
+    ("図の強調面の文字 svg .t-a",      "--on-accent-soft", "--accent-soft"),
+    ("図の警告面の文字 svg .t-w",      "--warn", "--warn-soft"),
 ]
 
-# 枠線は2つの面のあいだに引かれる。片側と 3:1 あれば境界は見分けられるので、
-# 隣り合う面のうち良いほうで見る。両側とも割ったときだけ落とす。
-CSS_BORDERS = [
-    ("カードの枠 .card",       "--ink",  ["--card", "--paper"]),
-    ("見出しの枠 h2",          "--ink",  ["--yellow", "--paper"]),
-    ("h1 の下罫",              "--ink",  ["--paper"]),
-    ("図の枠 figure svg",      "--ink",  ["--card", "--paper"]),
-    ("図の中の面の輪郭 svg .box-*", "--ink", ["--yellow", "--red", "--blue", "--card"]),
-    ("figcaption の縦線",      "--blue", ["--paper"]),
-    (".further の縦線",        "--blue", ["--card"]),
-    ("h3 の四角",              "--red",  ["--paper", "--card"]),
+# 図形の輪郭と矢印。ここは 3:1 を譲らない。
+#
+# 図の中の四角や矢印は飾りではなく、それ自体が「箱が2つある」「こちらへ流れる」という
+# 情報を持っている。輪郭が見えなくなった図は、中の文字が読めても意味が伝わらない。
+# WCAG 1.4.11 が非テキストに 3:1 を求めているのは、まさにこの種の要素に対して。
+CSS_OUTLINES = [
+    ("図の面の輪郭 svg .box",       "--line-strong", ["--card", "--paper"]),
+    ("図の強調面の輪郭 svg .box-a", "--accent",      ["--accent-soft"]),
+    ("図の警告面の輪郭 svg .box-w", "--warn",        ["--warn-soft"]),
+    ("図の線と矢じり svg .ln/.ar",  "--line-strong", ["--card", "--paper"]),
+    ("フォーカスの輪郭 :focus-visible", "--accent",  ["--paper", "--card"]),
+]
+
+# 紙面の罫線。ここは 3:1 を求めない。
+#
+# カードの枠や表の区切りは、それ自体が情報を持っているわけではない。
+# 「ここから別の塊」と分かればよく、中身を読むのに枠を見る必要はない。
+# 現代的な組版でこれらが 1px の淡い線なのは手抜きではなく、
+# 線を強くするほど1画面あたりの線の本数が増え、読む前に視線が引っかかるため。
+#
+# なのでここで見るのは「見えるかどうか」だけ。--line を --paper と同じ値に
+# してしまった、といった事故を止めるのがこの検査の仕事で、
+# コントラストの基準を課すことではない。
+CHROME_MIN = 1.15
+CSS_CHROME = [
+    ("カードの枠 .card",     "--line", ["--card", "--paper"]),
+    ("節の上の罫 h2",        "--line", ["--paper"]),
+    ("図の枠 figure svg",    "--line", ["--card", "--paper"]),
+    ("参考文献の区切り .further li", "--line", ["--paper"]),
+    ("節のアクセント h2::before",    "--accent", ["--paper"]),
+    ("注意書きの縦線 .warn",  "--warn",   ["--warn-soft"]),
+    ("危険の縦線 .warn.danger", "--danger", ["--danger-soft"]),
 ]
 
 SHAPES = ("rect", "circle", "ellipse", "polygon", "polyline")
@@ -287,8 +309,13 @@ def judge(r: Report, label: str, fg_raw: str, bg_raw: str, theme: str,
 
 
 def judge_border(r: Report, label: str, line_raw: str,
-                 surfaces: list[tuple[str, str]], theme: str, rows: list) -> None:
-    """枠線は隣り合う面のうち良いほうで見る。両側とも 3:1 を割ったときだけ落とす。"""
+                 surfaces: list[tuple[str, str]], theme: str, rows: list,
+                 need: float = AA_NONTEXT) -> None:
+    """線は隣り合う面のうち良いほうで見る。両側とも基準を割ったときだけ落とす。
+
+    need は線の役割で変える。図形の輪郭は 3:1（CSS_OUTLINES）、
+    紙面の罫線は「見えていること」だけを見る（CSS_CHROME / CHROME_MIN）。
+    """
     line = parse_color(line_raw)
     if line is None:
         r.warn(f"[{theme}] {label}: 線の色を解決できない（{line_raw or '未定義'}）")
@@ -302,11 +329,11 @@ def judge_border(r: Report, label: str, line_raw: str,
         r.warn(f"[{theme}] {label}: 隣の面の色を解決できない")
         return
     best, name, raw = max(scored)
-    rows.append((theme, f"{label}（対 {name}）", line_raw, raw, best, AA_NONTEXT))
-    if best < AA_NONTEXT:
+    rows.append((theme, f"{label}（対 {name}）", line_raw, raw, best, need))
+    if best < need:
         pairs = "、".join(f"{n} で {v:.2f}:1" for v, n, _ in sorted(scored, reverse=True))
-        r.fail(f"[{theme}] {label}: どちらの面とも {AA_NONTEXT}:1 に届かない（{pairs}）。"
-               "枠が消えて見える")
+        r.fail(f"[{theme}] {label}: どの面とも {need}:1 に届かない（{pairs}）。"
+               "線が消えて見える")
 
 
 def check_palette(r: Report, themes: dict[str, dict[str, str]], min_text: float,
@@ -315,9 +342,14 @@ def check_palette(r: Report, themes: dict[str, dict[str, str]], min_text: float,
         for label, fg, bg in CSS_PAIRS:
             judge(r, label, resolve(f"var({fg})", table), resolve(f"var({bg})", table),
                   theme, min_text, rows)
-        for label, line, surfaces in CSS_BORDERS:
+        for label, line, surfaces in CSS_OUTLINES:
             judge_border(r, label, resolve(f"var({line})", table),
-                         [(s, resolve(f"var({s})", table)) for s in surfaces], theme, rows)
+                         [(s, resolve(f"var({s})", table)) for s in surfaces],
+                         theme, rows, AA_NONTEXT)
+        for label, line, surfaces in CSS_CHROME:
+            judge_border(r, label, resolve(f"var({line})", table),
+                         [(s, resolve(f"var({s})", table)) for s in surfaces],
+                         theme, rows, CHROME_MIN)
 
 
 def check_svg(r: Report, html: str, themes: dict[str, dict[str, str]], css: str,
