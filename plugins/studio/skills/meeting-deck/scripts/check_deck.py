@@ -48,46 +48,72 @@ LEN_RE = re.compile(r"^\s*([-+]?[\d.]+)\s*(px|em|rem|pt|%)?\s*$")
 
 # deck.css が保証している「文字色 × 下地」の組。値は変わっても、組は設計そのもの。
 CSS_PAIRS = [
-    ("本文 body",                     "--ink",       "--paper"),
-    ("カード内の本文 .card",           "--ink",       "--card"),
-    ("見出し h2（黄の上）",            "--on-yellow", "--yellow"),
-    ("節番号 h2 .n（黒の上）",         "--paper",     "--ink"),
-    ("節の索引 .rail a",              "--ink",       "--card"),
-    ("節の索引（現在地・黄の上）",      "--on-yellow", "--yellow"),
-    ("ラベル .eyebrow（赤の上）",      "--on-red",    "--red"),
-    ("黄カード .card.accent",          "--on-yellow", "--yellow"),
-    ("青カード .card.blue",            "--on-blue",   "--blue"),
-    ("見出し h3",                     "--ink",       "--paper"),
-    ("見出し h3（カード内）",          "--ink",       "--card"),
-    ("数字 .stat b",                  "--ink",       "--card"),
-    ("数字の説明 .stat span",          "--blue",      "--card"),
-    ("数字の出典 .stat cite",          "--blue",      "--card"),
-    ("表の見出し th（黄の上）",        "--on-yellow", "--yellow"),
-    ("表の本体 td",                   "--ink",       "--card"),
-    ("figcaption（青）",               "--blue",      "--paper"),
-    ("リンク a",                      "--blue",      "--paper"),
-    ("リンク a（カード内）",           "--blue",      "--card"),
-    ("図の補助文字 svg .t-sub",        "--blue",      "--card"),
-    ("図の強調文字 svg .t-red",        "--red",       "--card"),
-    ("フォーカスの輪郭 :focus-visible", "--red",       "--paper"),
+    ("本文 body",                      "--ink",  "--paper"),
+    ("カード内の本文 .card",            "--ink",  "--card"),
+    ("見出し h1/h2/h3",                "--ink",  "--paper"),
+    ("見出し h3（カード内）",           "--ink",  "--card"),
+    ("節番号 h2 .n",                   "--on-accent-soft", "--accent-soft"),
+    ("節の索引 .rail a",               "--sub",  "--paper"),
+    ("節の索引（現在地）",              "--on-accent-soft", "--accent-soft"),
+    ("ラベル .eyebrow",                "--sub",  "--paper"),
+    ("強調カード .card.accent",         "--ink",  "--accent-soft"),
+    ("強調カードの見出し h3",           "--on-accent-soft", "--accent-soft"),
+    ("強調カードのリンク",              "--accent", "--accent-soft"),
+    ("注意書きの本文 .warn",            "--ink",  "--warn-soft"),
+    ("注意書きの強調 .warn b",          "--warn", "--warn-soft"),
+    ("危険の本文 .warn.danger",         "--ink",  "--danger-soft"),
+    ("危険の強調 .warn.danger b",       "--danger", "--danger-soft"),
+    ("数字 .stat b",                   "--ink",  "--paper"),
+    ("数字の説明 .stat span",           "--sub",  "--paper"),
+    ("数字の出典 .stat cite",           "--sub",  "--paper"),
+    ("表の見出し th",                   "--on-accent-soft", "--accent-soft"),
+    ("表の本体 td",                    "--ink",  "--card"),
+    ("figcaption",                     "--sub",  "--paper"),
+    ("リンク a",                       "--accent", "--paper"),
+    ("リンク a（カード内）",            "--accent", "--card"),
+    ("図の文字 svg .t",                "--ink",  "--card"),
+    ("図の補助文字 svg .t-sub",         "--sub",  "--card"),
+    ("図の強調面の文字 svg .t-a",       "--on-accent-soft", "--accent-soft"),
+    ("図の警告面の文字 svg .t-w",       "--warn", "--warn-soft"),
+    ("図の強調文字 svg .t-em",         "--accent", "--card"),
+    ("図の強調文字 svg .t-em（地）",   "--accent", "--paper"),
 ]
 
-# 枠線は2つの面のあいだに引かれる。片側と 3:1 あれば境界は見分けられるので、
-# 隣り合う面のうち良いほうで見る。両側とも割ったときだけ落とす。
-CSS_BORDERS = [
-    ("カードの枠 .card",       "--ink",  ["--card", "--paper"]),
-    ("見出しの枠 h2",          "--ink",  ["--yellow", "--paper"]),
-    ("h1 の下罫",              "--ink",  ["--paper"]),
-    ("図の枠 figure svg",      "--ink",  ["--card", "--paper"]),
-    ("図の中の面の輪郭 svg .box-*", "--ink", ["--yellow", "--red", "--blue", "--card"]),
-    ("節の区切り .panel",       "--ink",  ["--paper"]),
-    ("索引の下端 .rail",        "--ink",  ["--paper"]),
-    ("索引の枠 .rail a",        "--ink",  ["--card", "--paper"]),
-    ("表の罫線 th,td",          "--ink",  ["--card", "--yellow"]),
-    ("数字の枠 .stat",          "--ink",  ["--card", "--paper"]),
-    ("数字の上端 .stat",        "--red",  ["--card", "--paper"]),
-    ("figcaption の縦線",       "--blue", ["--paper"]),
-    ("h3 の四角",              "--red",  ["--paper", "--card"]),
+# 図形の輪郭と矢印。ここは 3:1 を譲らない。
+#
+# 図の中の四角や矢印は飾りではなく、それ自体が「箱が2つある」「こちらへ流れる」という
+# 情報を持っている。輪郭が見えなくなった図は、中の文字が読めても意味が伝わらない。
+# 投影すると線はさらに飛ぶので、ここを緩めると会議室で真っ先に崩れる。
+CSS_OUTLINES = [
+    ("図の面の輪郭 svg .box",       "--line-strong", ["--card", "--paper"]),
+    ("図の強調面の輪郭 svg .box-a", "--accent",      ["--accent-soft"]),
+    ("図の警告面の輪郭 svg .box-w", "--warn",        ["--warn-soft"]),
+    ("図の線と矢じり svg .ln/.ar",  "--line-strong", ["--card", "--paper"]),
+    ("図の囲い svg .group",         "--line-strong", ["--card", "--paper"]),
+    ("数字の上端 .stat",            "--line-strong", ["--paper"]),
+    ("フォーカスの輪郭 :focus-visible", "--accent",  ["--paper", "--card"]),
+]
+
+# 紙面の罫線。ここは 3:1 を求めない。
+#
+# カードの枠や表の区切りは、それ自体が情報を持っているわけではない。
+# 「ここから別の塊」と分かればよく、中身を読むのに枠を見る必要はない。
+# 現代的な組版でこれらが 1px の淡い線なのは手抜きではなく、
+# 線を強くするほど1画面あたりの線の本数が増え、読む前に視線が引っかかるため。
+#
+# なのでここで見るのは「見えるかどうか」だけ。--line を --paper と同じ値に
+# してしまった、といった事故を止めるのがこの検査の仕事。
+CHROME_MIN = 1.15
+CSS_CHROME = [
+    ("カードの枠 .card",      "--line", ["--card", "--paper"]),
+    ("図の枠 figure svg",     "--line", ["--card", "--paper"]),
+    ("節の区切り .panel",     "--line", ["--paper"]),
+    ("索引の下端 .rail",      "--line", ["--paper"]),
+    ("索引の枠 .rail a",      "--line", ["--paper"]),
+    ("表の罫線 th,td",        "--line", ["--card", "--accent-soft"]),
+    ("表の外枠 .scroll",      "--line", ["--card", "--paper"]),
+    ("注意書きの縦線 .warn",  "--warn",   ["--warn-soft"]),
+    ("危険の縦線 .warn.danger", "--danger", ["--danger-soft"]),
 ]
 
 SHAPES = ("rect", "circle", "ellipse", "polygon", "polyline")
@@ -313,8 +339,13 @@ def judge(r: Report, label: str, fg_raw: str, bg_raw: str, theme: str,
 
 
 def judge_border(r: Report, label: str, line_raw: str,
-                 surfaces: list[tuple[str, str]], theme: str, rows: list) -> None:
-    """枠線は隣り合う面のうち良いほうで見る。両側とも 3:1 を割ったときだけ落とす。"""
+                 surfaces: list[tuple[str, str]], theme: str, rows: list,
+                 need: float = AA_NONTEXT) -> None:
+    """線は隣り合う面のうち良いほうで見る。両側とも基準を割ったときだけ落とす。
+
+    need は線の役割で変える。図形の輪郭は 3:1（CSS_OUTLINES）、
+    紙面の罫線は「見えていること」だけを見る（CSS_CHROME / CHROME_MIN）。
+    """
     line = parse_color(line_raw)
     if line is None:
         r.warn(f"[{theme}] {label}: 線の色を解決できない（{line_raw or '未定義'}）")
@@ -328,11 +359,11 @@ def judge_border(r: Report, label: str, line_raw: str,
         r.warn(f"[{theme}] {label}: 隣の面の色を解決できない")
         return
     best, name, raw = max(scored)
-    rows.append((theme, f"{label}（対 {name}）", line_raw, raw, best, AA_NONTEXT))
-    if best < AA_NONTEXT:
+    rows.append((theme, f"{label}（対 {name}）", line_raw, raw, best, need))
+    if best < need:
         pairs = "、".join(f"{n} で {v:.2f}:1" for v, n, _ in sorted(scored, reverse=True))
-        r.fail(f"[{theme}] {label}: どちらの面とも {AA_NONTEXT}:1 に届かない（{pairs}）。"
-               "枠が消えて見える")
+        r.fail(f"[{theme}] {label}: どの面とも {need}:1 に届かない（{pairs}）。"
+               "線が消えて見える")
 
 
 def check_palette(r: Report, themes: dict[str, dict[str, str]], min_text: float,
@@ -341,9 +372,14 @@ def check_palette(r: Report, themes: dict[str, dict[str, str]], min_text: float,
         for label, fg, bg in CSS_PAIRS:
             judge(r, label, resolve(f"var({fg})", table), resolve(f"var({bg})", table),
                   theme, min_text, rows)
-        for label, line, surfaces in CSS_BORDERS:
+        for label, line, surfaces in CSS_OUTLINES:
             judge_border(r, label, resolve(f"var({line})", table),
-                         [(s, resolve(f"var({s})", table)) for s in surfaces], theme, rows)
+                         [(s, resolve(f"var({s})", table)) for s in surfaces],
+                         theme, rows, AA_NONTEXT)
+        for label, line, surfaces in CSS_CHROME:
+            judge_border(r, label, resolve(f"var({line})", table),
+                         [(s, resolve(f"var({s})", table)) for s in surfaces],
+                         theme, rows, CHROME_MIN)
 
 
 def check_svg(r: Report, html: str, themes: dict[str, dict[str, str]], css: str,
@@ -404,6 +440,11 @@ def check_svg(r: Report, html: str, themes: dict[str, dict[str, str]], css: str,
                 shape_tag, shape_cls = under
                 bg = next((palette[c]["fill"] for c in reversed(shape_cls)
                            if c in palette and "fill" in palette[c]), None)
+                # 塗っていない図形（.group のような囲い）は何も覆っていないので、
+                # その内側の文字が乗っているのは図の地。透明を下地として測ろうとすると
+                # 「色を解決できない」で止まるが、実際には測れる。
+                if bg is not None and bg.strip().lower() in ("none", "transparent"):
+                    bg, shape_tag = None, "(図の地)"
                 if bg is None:
                     bg = resolve("var(--card)", table)   # figure svg{background:var(--card)}
                 label = f"{where} on <{shape_tag}>"

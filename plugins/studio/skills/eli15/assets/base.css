@@ -143,8 +143,12 @@ figcaption{font-size:.85rem; line-height:1.75; color:var(--sub); margin-top:.8re
 svg .box   {fill:var(--card);        stroke:var(--line-strong); stroke-width:1.5}
 svg .box-a {fill:var(--accent-soft); stroke:var(--accent);      stroke-width:1.5}
 svg .box-w {fill:var(--warn-soft);   stroke:var(--warn);        stroke-width:1.5}
+/* まとまりの境界。塗らずに破線で囲う。中に別の面を置くので、
+ * ここを塗ると内側の面と重なって、どちらが囲いなのか分からなくなる。 */
+svg .group {fill:none; stroke:var(--line-strong); stroke-width:1.5; stroke-dasharray:6 4}
 svg .t     {fill:var(--ink)}             /* 地・.box の上の文字 */
-svg .t-sub {fill:var(--sub)}             /* 補助の文字 */
+svg .t-sub {fill:var(--sub)}             /* 補助・単位・注 */
+svg .t-em  {fill:var(--accent)}          /* 地の上で1語だけ強める */
 svg .t-a   {fill:var(--on-accent-soft)}  /* .box-a の上 */
 svg .t-w   {fill:var(--warn)}            /* .box-w の上 */
 svg .ln    {stroke:var(--line-strong); stroke-width:1.5; fill:none}

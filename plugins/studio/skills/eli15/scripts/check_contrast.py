@@ -50,6 +50,8 @@ CSS_PAIRS = [
     ("図の補助文字 svg .t-sub",        "--sub",  "--card"),
     ("図の強調面の文字 svg .t-a",      "--on-accent-soft", "--accent-soft"),
     ("図の警告面の文字 svg .t-w",      "--warn", "--warn-soft"),
+    ("図の強調文字 svg .t-em",         "--accent", "--card"),
+    ("図の強調文字 svg .t-em（地）",   "--accent", "--paper"),
 ]
 
 # 図形の輪郭と矢印。ここは 3:1 を譲らない。
@@ -62,6 +64,7 @@ CSS_OUTLINES = [
     ("図の強調面の輪郭 svg .box-a", "--accent",      ["--accent-soft"]),
     ("図の警告面の輪郭 svg .box-w", "--warn",        ["--warn-soft"]),
     ("図の線と矢じり svg .ln/.ar",  "--line-strong", ["--card", "--paper"]),
+    ("図の囲い svg .group",         "--line-strong", ["--card", "--paper"]),
     ("フォーカスの輪郭 :focus-visible", "--accent",  ["--paper", "--card"]),
 ]
 
@@ -407,6 +410,11 @@ def check_svg(r: Report, html: str, themes: dict[str, dict[str, str]], css: str,
                 shape_tag, shape_cls = under
                 bg = next((palette[c]["fill"] for c in reversed(shape_cls)
                            if c in palette and "fill" in palette[c]), None)
+                # 塗っていない図形（.group のような囲い）は何も覆っていないので、
+                # その内側の文字が乗っているのは図の地。透明を下地として測ろうとすると
+                # 「色を解決できない」で止まるが、実際には測れる。
+                if bg is not None and bg.strip().lower() in ("none", "transparent"):
+                    bg, shape_tag = None, "(図の地)"
                 if bg is None:
                     bg = resolve("var(--card)", table)   # figure svg{background:var(--card)}
                 label = f"{where} on <{shape_tag}>"
