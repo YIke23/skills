@@ -1,4 +1,7 @@
-/* meeting-deck base stylesheet — Neobrutalism（eli15 の配色を継承）
+/* meeting-deck base stylesheet — Bauhaus（eli15 の配色を継承）
+ *
+ * 色は5つしかない。赤・黄・青・黒・白。中間色も淡色も灰色も使わない。
+ * 面はベタで塗り、影もグラデーションも角丸も付けない。区切りは罫線と色面が引き受ける。
  *
  * 色は eli15 で全組み合わせをライト/ダーク両方で測ってある。値を変えると崩れる。
  * 変えたくなったら check_deck.py で測り直してから変えること。
@@ -15,39 +18,47 @@
 :root{
   color-scheme:light dark;
 
-  --paper:#EFEFE9;      /* 地。ページ全体 */
-  --card:#FFFFFF;       /* カードの塗り */
-  --band:#E4E4DC;       /* 少し沈めた帯 */
-  --accent:#FFC53D;     /* 琥珀。強調ブロック専用 */
-  --ink:#14213D;        /* 枠・影・本文。この一色で全部の線を引く */
-  --on-accent:#14213D;  /* 琥珀の上に置く文字。明色は絶対に使わない */
-  --sub:#4A5568;        /* 補足文字 */
-  --hot:#AE2B13;        /* ラベル・見出しの差し色 */
-  --cool:#1B54B8;       /* second accent */
+  --paper:#FFFFFF;       /* 地。ページ全体 */
+  --card:#FFFFFF;        /* カードの塗り。地と同色で、境界は罫線が引く */
+  --ink:#000000;         /* 罫線と本文。すべての線はこの一色 */
 
-  --bd:3px;             /* 枠線の太さ */
-  --sh:5px;             /* 影のずれ幅。ぼかさない */
+  --red:#D42A20;         /* 三原色。面にも、地の上の強調文字にも使える */
+  --yellow:#FFD500;
+  --blue:#0057B8;
 
-  --measure:34em;       /* 本文の幅。20px で約 34 字 */
-  --stage:60em;         /* 紙面の幅。図はここまで広げてよい */
+  --on-red:#FFFFFF;      /* 赤の面の上に置く文字 */
+  --on-yellow:#000000;   /* 黄の面の上は暗い文字のみ。明色は 4.5:1 を絶対に通らない */
+  --on-blue:#FFFFFF;     /* 青の面の上に置く文字 */
+
+  --bd:3px;              /* 標準の罫線 */
+  --bd-x:10px;           /* 節の切れ目に引く太い罫線 */
+
+  --measure:34em;        /* 本文の幅。20px で約 34 字 */
+  --stage:60em;          /* 紙面の幅。図はここまで広げてよい */
 }
 
+/* ダークでも三原色であることは変えない。明度だけ、黒地で 4.5:1 を通る側へ振る。
+ * 黄は元のまま通るので動かさない。赤と青は明るい側に置き、載せる文字が黒に反転する。 */
 @media (prefers-color-scheme:dark){
   :root{
-    --paper:#14161C; --card:#1F232E; --band:#282D3A;
-    --accent:#E5B547; --ink:#EDE9DD; --on-accent:#14161C;
-    --sub:#A2AAB8; --hot:#FF8E6B; --cool:#8FB4F5;
+    --paper:#000000; --card:#000000; --ink:#FFFFFF;
+    --red:#FF6B57; --yellow:#FFD500; --blue:#7FB2FF;
+    --on-red:#000000; --on-yellow:#000000; --on-blue:#000000;
   }
 }
 
 *{box-sizing:border-box}
 
 /* 20px は「後ろの席で読める」ではなく「Zoom で縮小されても読める」ための下限。
- * 画面共有は受け手側で 70〜80% に縮むことがあり、17px だと 13px 相当まで落ちる。 */
+ * 画面共有は受け手側で 70〜80% に縮むことがあり、17px だと 13px 相当まで落ちる。
+ *
+ * 書体は幾何学的サンセリフを欧文に当て、和文は既存のゴシックに落とす。
+ * Bauhaus の書体は円と直線でできているので、欧文だけでも当たると印象が変わる。 */
 body{
   margin:0; background:var(--paper); color:var(--ink);
-  font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,
-              "Noto Sans JP","Helvetica Neue",Arial,sans-serif;
+  font-family:Futura,"Century Gothic","Avenir Next","Helvetica Neue",
+              "Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,
+              "Noto Sans JP",Arial,sans-serif;
   font-size:20px; line-height:1.8;
   -webkit-font-smoothing:antialiased;
 }
@@ -57,7 +68,7 @@ body{
  * 固定するのは、スクロールで見失ったときに戻り先が常に見えている必要があるため。 */
 .rail{
   position:sticky; top:0; z-index:10;
-  background:var(--band); border-bottom:var(--bd) solid var(--ink);
+  background:var(--paper); border-bottom:var(--bd-x) solid var(--ink);
   padding:.5rem .8rem; overflow-x:auto; white-space:nowrap;
   scrollbar-width:thin;
 }
@@ -67,7 +78,7 @@ body{
   color:var(--ink); background:var(--card);
   border:2px solid var(--ink); text-decoration:none;
 }
-.rail a[aria-current="true"]{background:var(--accent); color:var(--on-accent)}
+.rail a[aria-current="true"]{background:var(--yellow); color:var(--on-yellow)}
 
 .deck{max-width:var(--stage); margin:0 auto; padding:2rem 1.5rem 6rem}
 
@@ -80,52 +91,71 @@ body{
 .panel > h3{max-width:var(--measure)}
 
 /* ── 節 ─────────────────────────────────────────────────
- * 節の切れ目を線で見せる。1画面に2つの論点が同時に映ると、
+ * 節の切れ目を太い罫線で見せる。1画面に2つの論点が同時に映ると、
  * 聞き手はどちらの話をしているのか分からなくなる。 */
 .panel{
   padding:2.5rem 0 3rem;
-  border-top:var(--bd) solid var(--ink);
+  border-top:var(--bd-x) solid var(--ink);
   scroll-margin-top:4rem;          /* 索引の裏に見出しが隠れない */
 }
 .panel:first-of-type{border-top:0}
 
+/* 角は丸めない。Bauhaus の面は矩形で、丸は円としてだけ現れる。 */
 .eyebrow{
   display:inline-block; margin:0 0 1rem;
-  font-size:.72rem; font-weight:800; letter-spacing:.16em;
-  text-transform:uppercase; color:var(--on-accent);
-  background:var(--accent); border:var(--bd) solid var(--ink);
-  border-radius:999px; padding:.35rem 1rem;
-  box-shadow:var(--sh) var(--sh) 0 var(--ink);
+  font-size:.72rem; font-weight:700; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--on-red);
+  background:var(--red); padding:.4rem 1rem;
 }
+
+/* 三つの形（赤＝四角・黄＝三角・青＝円）。表紙の頭に1つだけ置ける。
+ * 中身はインラインSVGで、下の .box-r / .box-y / .box-c で塗る。 */
+.flag{display:block; width:150px; height:46px; margin:0 0 1.25rem}
 
 h1{
-  font-size:2.4rem; line-height:1.3; font-weight:900;
-  letter-spacing:-.02em; margin:.6rem 0 1.2rem; color:var(--ink);
+  font-size:2.4rem; line-height:1.25; font-weight:900;
+  letter-spacing:-.01em; margin:.6rem 0 1.2rem; color:var(--ink);
   max-width:var(--measure);
+  padding-bottom:1rem; border-bottom:var(--bd-x) solid var(--ink);
 }
 
-/* 階層はサイズだけで作らない。太さと色も一緒に動かす。 */
+/* 階層はサイズだけで作らない。面の色と太さも一緒に動かす。 */
 h2{
-  font-size:1.35rem; line-height:1.5; font-weight:800; color:var(--ink);
+  font-size:1.35rem; line-height:1.5; font-weight:800;
+  color:var(--on-yellow); background:var(--yellow);
   margin:0 0 1.4rem; padding:.6rem 1rem;
-  background:var(--band); border:var(--bd) solid var(--ink);
-  box-shadow:var(--sh) var(--sh) 0 var(--ink);
+  border:var(--bd) solid var(--ink);
 }
-h2 .n{color:var(--hot); margin-right:.6rem}
-h3{font-size:1.05rem; font-weight:800; margin:1.6rem 0 .6rem; color:var(--hot)}
+/* 節番号は黒の面に白で抜く。黄の帯の中で、番号だけが別の面として立つ。 */
+h2 .n{
+  display:inline-block; background:var(--ink); color:var(--paper);
+  padding:0 .5em; margin-right:.6rem; font-variant-numeric:tabular-nums;
+}
+/* 赤の四角を頭に置く。見出しであることを、大きさではなく形で示す。 */
+h3{
+  font-size:1.05rem; font-weight:800; margin:1.6rem 0 .6rem; color:var(--ink);
+  display:flex; align-items:baseline; gap:.5rem;
+}
+h3::before{content:""; flex:0 0 auto; width:.62em; height:.62em; background:var(--red)}
 
 p{margin:0 0 1.1rem; text-align:left}   /* 両端揃えにしない */
 .lede{font-size:1.1rem; line-height:1.85}
 ul,ol{margin:0 0 1.1rem; padding-left:1.4em}
 li{margin:0 0 .5rem}
 
+/* 影は付けない。紙に刷られていて、浮いていない。 */
 .card{
   background:var(--card); border:var(--bd) solid var(--ink);
-  box-shadow:var(--sh) var(--sh) 0 var(--ink);
   padding:1.6rem; margin:1.8rem 0;
 }
-.card.accent{background:var(--accent); color:var(--on-accent)}
-.card.accent b{color:var(--on-accent)}
+.card > :first-child{margin-top:0}
+.card > :last-child{margin-bottom:0}
+.card.accent{background:var(--yellow); color:var(--on-yellow)}
+.card.accent b,.card.accent h3{color:var(--on-yellow)}
+.card.accent h3::before{background:var(--ink)}
+.card.blue{background:var(--blue); color:var(--on-blue)}
+.card.blue b,.card.blue h3{color:var(--on-blue)}
+.card.blue h3::before{background:var(--on-blue)}
 
 /* ── 図 ─────────────────────────────────────────────────
  * 本文より広く出す。図が主役という設計を、幅で示す。 */
@@ -133,43 +163,48 @@ figure{margin:2rem 0; padding:0}
 figure svg{
   width:100%; height:auto; display:block;
   background:var(--card); border:var(--bd) solid var(--ink);
-  box-shadow:var(--sh) var(--sh) 0 var(--ink);
 }
 figcaption{
-  font-size:.85rem; line-height:1.7; color:var(--sub);
+  font-size:.85rem; line-height:1.7; color:var(--blue);
   margin-top:.9rem; padding-left:.7rem; max-width:var(--measure);
-  border-left:var(--bd) solid var(--ink);
+  border-left:var(--bd-x) solid var(--blue);
 }
 
-/* SVGの色はここから引く。属性に直書きするとダークで取り残される。 */
+/* ── 図の色 ─────────────────────────────────────────────
+ * SVGの色はここから引く。属性に直書きするとダークで取り残される。
+ * 面（.box-*）と、その面の上に置く文字（.t-*）は必ず対で使う。 */
 svg .box   {fill:var(--card);   stroke:var(--ink); stroke-width:2.5}
-svg .box-b {fill:var(--band);   stroke:var(--ink); stroke-width:2.5}
-svg .box-a {fill:var(--accent); stroke:var(--ink); stroke-width:2.5}
-svg .t     {fill:var(--ink)}
-svg .t-sub {fill:var(--sub)}
-svg .t-a   {fill:var(--on-accent)}   /* 琥珀ブロックの上の文字はこれ */
-svg .t-hot {fill:var(--hot)}
-svg .t-cool{fill:var(--cool)}
+svg .box-y {fill:var(--yellow); stroke:var(--ink); stroke-width:2.5}
+svg .box-r {fill:var(--red);    stroke:var(--ink); stroke-width:2.5}
+svg .box-c {fill:var(--blue);   stroke:var(--ink); stroke-width:2.5}
+svg .t     {fill:var(--ink)}        /* 地（.box を含む）の上の文字 */
+svg .t-sub {fill:var(--blue)}       /* 地の上の補助文字。色面の上には置かない */
+svg .t-red {fill:var(--red)}        /* 地の上の強調。色面の上には置かない */
+svg .t-y   {fill:var(--on-yellow)}  /* 黄の面の上 */
+svg .t-r   {fill:var(--on-red)}     /* 赤の面の上 */
+svg .t-c   {fill:var(--on-blue)}    /* 青の面の上 */
 svg .ln    {stroke:var(--ink); stroke-width:2.5; fill:none}
 svg .ar    {fill:var(--ink)}
 
 /* ── 数字 ───────────────────────────────────────────────
- * 会議で一番見られるのは数字。文中に埋めず、外に出す。 */
+ * 会議で一番見られるのは数字。文中に埋めず、外に出す。
+ * 上端の赤い帯は、並んだカードの中で数字の列だとひと目で分かるようにするためのもの。 */
 .stats{display:flex; flex-wrap:wrap; gap:1.2rem; margin:1.8rem 0}
 .stat{
   flex:1 1 12rem; background:var(--card);
-  border:var(--bd) solid var(--ink); box-shadow:var(--sh) var(--sh) 0 var(--ink);
+  border:var(--bd) solid var(--ink); border-top:var(--bd-x) solid var(--red);
   padding:1.2rem 1.3rem;
 }
-.stat b{display:block; font-size:2.2rem; line-height:1.15; font-weight:900}
-.stat span{display:block; font-size:.85rem; line-height:1.6; color:var(--sub); margin-top:.4rem}
-.stat cite{display:block; font-size:.72rem; font-style:normal; color:var(--sub); margin-top:.5rem}
+.stat b{display:block; font-size:2.2rem; line-height:1.15; font-weight:900;
+        font-variant-numeric:tabular-nums}
+.stat span{display:block; font-size:.85rem; line-height:1.6; color:var(--blue); margin-top:.4rem}
+.stat cite{display:block; font-size:.72rem; font-style:normal; color:var(--blue); margin-top:.5rem}
 
 /* ── 表 ─────────────────────────────────────────────────
  * 会議資料で最も潰れるのが表。狭い画面では必ず横スクロールに逃がす。
  * 縮小して全列を入れると、その瞬間に誰も読めない表になる。 */
 .scroll{overflow-x:auto; margin:1.8rem 0; border:var(--bd) solid var(--ink);
-        box-shadow:var(--sh) var(--sh) 0 var(--ink); background:var(--card)}
+        background:var(--card)}
 /* 表の幅は、列数ではなく中身に決めさせる。
  *
  * width:100% + table の min-width では、その値が列数と噛み合わない。
@@ -189,17 +224,18 @@ table{border-collapse:collapse; width:max-content; min-width:100%; font-size:.92
 /* 1セルの上限。これが無いと、長い文が1行に伸びて表が数千pxになる。 */
 th,td{padding:.7rem .9rem; text-align:left; border-bottom:2px solid var(--ink);
       vertical-align:top; max-width:22em}
-th{background:var(--band); font-weight:800}
+th{background:var(--yellow); color:var(--on-yellow); font-weight:800}
 tr:last-child td{border-bottom:0}
 
 /* ── 2カラムの並置（比較・対比）───────────────────────── */
 .pair{display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; margin:1.8rem 0}
 .pair > *{margin:0}
 
-a{color:var(--cool); text-decoration:underline; text-underline-offset:.15em}
+a{color:var(--blue); text-decoration:underline;
+  text-decoration-thickness:2px; text-underline-offset:.15em}
 
-/* 枠と影が濃いので、フォーカスは同じ見え方だと埋もれる。別の色で外側に出す。 */
-:focus-visible{outline:3px solid var(--hot); outline-offset:3px; box-shadow:none}
+/* 罫線が黒一色なので、フォーカスを同じ色で描くと埋もれる。赤で外側に出す。 */
+:focus-visible{outline:3px solid var(--red); outline-offset:3px}
 
 @media (prefers-reduced-motion:no-preference){
   .panel{animation:rise .4s ease-out both}
@@ -207,7 +243,7 @@ a{color:var(--cool); text-decoration:underline; text-underline-offset:.15em}
 }
 
 @media (max-width:640px){
-  :root{--sh:4px}
+  :root{--bd-x:8px}
   body{font-size:18px}
   .deck{padding:1.5rem 1.1rem 4rem}
   h1{font-size:1.75rem}

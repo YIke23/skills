@@ -126,6 +126,7 @@ changelogを先に見る。**直近3〜6か月にコンソール改修があれ�
 ### 4. HTMLを書く
 
 規約は `references/html.md`。単一ファイル、外部CDNなし、`color-scheme: light dark`。
+見た目は Bauhaus で固定（赤・黄・青・黒・白の5色、ベタ塗り、影も角丸もなし）。
 手順は必ずこの形にする:
 
 ```html

@@ -31,30 +31,37 @@ AA_TEXT = 4.5          # 本文・図中の文字
 AA_NONTEXT = 3.0       # 枠線など、文字でない要素
 
 # base.css が保証している「文字色 × 下地」の組。値は変わっても、組は設計そのもの。
+# 面は赤・黄・青・黒・白の5つしかないので、組もその範囲に閉じている。
 CSS_PAIRS = [
-    ("本文 body",                  "--ink",       "--paper"),
-    ("カード内の本文 .card",        "--ink",       "--card"),
-    ("見出し h2（帯の上）",         "--ink",       "--band"),
-    ("ラベル .eyebrow（琥珀の上）",  "--on-accent", "--accent"),
-    ("琥珀カード .card.accent",     "--on-accent", "--accent"),
-    ("見出し h3（差し色）",         "--hot",       "--paper"),
-    ("見出し h3（カード内）",       "--hot",       "--card"),
-    (".further b（差し色）",        "--hot",       "--card"),
-    ("figcaption（補足）",          "--sub",       "--paper"),
-    (".further span（補足）",       "--sub",       "--card"),
-    ("リンク a",                   "--cool",      "--paper"),
-    ("リンク a（カード内）",        "--cool",      "--card"),
-    ("フォーカスの輪郭 :focus-visible", "--hot",    "--paper"),
+    ("本文 body",                     "--ink",       "--paper"),
+    ("カード内の本文 .card",           "--ink",       "--card"),
+    ("見出し h2（黄の上）",            "--on-yellow", "--yellow"),
+    ("ラベル .eyebrow（赤の上）",      "--on-red",    "--red"),
+    ("黄カード .card.accent",          "--on-yellow", "--yellow"),
+    ("青カード .card.blue",            "--on-blue",   "--blue"),
+    ("見出し h3",                     "--ink",       "--paper"),
+    ("見出し h3（カード内）",          "--ink",       "--card"),
+    (".further b（赤）",               "--red",       "--card"),
+    ("figcaption（青）",               "--blue",      "--paper"),
+    (".further span（青）",            "--blue",      "--card"),
+    ("リンク a",                      "--blue",      "--paper"),
+    ("リンク a（カード内）",           "--blue",      "--card"),
+    ("図の補助文字 svg .t-sub",        "--blue",      "--card"),
+    ("図の強調文字 svg .t-red",        "--red",       "--card"),
+    ("フォーカスの輪郭 :focus-visible", "--red",       "--paper"),
 ]
 
 # 枠線は2つの面のあいだに引かれる。片側と 3:1 あれば境界は見分けられるので、
 # 隣り合う面のうち良いほうで見る。両側とも割ったときだけ落とす。
 CSS_BORDERS = [
-    ("カードの枠 .card",      "--ink", ["--card", "--paper"]),
-    ("帯の枠 h2",            "--ink", ["--band", "--paper"]),
-    ("琥珀の枠 .eyebrow",     "--ink", ["--accent", "--paper"]),
-    ("図の枠 figure svg",     "--ink", ["--card", "--paper"]),
-    ("figcaption の縦線",     "--ink", ["--paper"]),
+    ("カードの枠 .card",       "--ink",  ["--card", "--paper"]),
+    ("見出しの枠 h2",          "--ink",  ["--yellow", "--paper"]),
+    ("h1 の下罫",              "--ink",  ["--paper"]),
+    ("図の枠 figure svg",      "--ink",  ["--card", "--paper"]),
+    ("図の中の面の輪郭 svg .box-*", "--ink", ["--yellow", "--red", "--blue", "--card"]),
+    ("figcaption の縦線",      "--blue", ["--paper"]),
+    (".further の縦線",        "--blue", ["--card"]),
+    ("h3 の四角",              "--red",  ["--paper", "--card"]),
 ]
 
 SHAPES = ("rect", "circle", "ellipse", "polygon", "polyline")
@@ -363,7 +370,7 @@ def check_svg(r: Report, html: str, themes: dict[str, dict[str, str]], css: str,
                            if c in palette and "fill" in palette[c]), None)
                 if fg is None:
                     r.warn(f"[{theme}] {where}: 文字色のクラスが無い。"
-                           "`.t` `.t-sub` `.t-a` などを付ける")
+                           "`.t` `.t-sub` `.t-y` などを付ける")
                     break
                 shape_tag, shape_cls = under
                 bg = next((palette[c]["fill"] for c in reversed(shape_cls)

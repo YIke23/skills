@@ -71,35 +71,56 @@
 
 ## 色とダークモード
 
+**Bauhaus で固定。色は5つしかない。** 赤・黄・青・黒・白。淡い色も中間色も灰色も作らない。
+面はベタで塗り、影・グラデーション・角丸を付けない。区切りは罫線と色面が引き受ける。
+
 ```css
 :root {
   color-scheme: light dark;
-  --bg: #fffdf5;  --fg: #12100c;  --line: #12100c;
-  --accent: #ffd23f;  --danger: #ff5c5c;  --muted: #6b6558;
-  --card: #ffffff;
+  --paper:#FFFFFF; --card:#FFFFFF; --ink:#000000;
+  --red:#D42A20;  --yellow:#FFD500; --blue:#0057B8;
+  --on-red:#FFFFFF; --on-yellow:#000000; --on-blue:#FFFFFF;
 }
+/* ダークでも三原色は変えない。明度だけ、黒地で 4.5:1 を通る側へ振る。
+ * 黄は元のまま通るので動かさない。赤と青は明るい側に置き、載せる文字が黒に反転する。 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #14120e;  --fg: #f5f1e6;  --line: #f5f1e6;
-    --accent: #ffcf33;  --danger: #ff7a7a;  --muted: #a8a091;
-    --card: #1f1c16;
+    --paper:#000000; --card:#000000; --ink:#FFFFFF;
+    --red:#FF6B57;  --yellow:#FFD500; --blue:#7FB2FF;
+    --on-red:#000000; --on-yellow:#000000; --on-blue:#000000;
   }
 }
 ```
 
-**SVGに色を直書きしない。** `fill="#ff5c5c"` と書くとダークモードで別物になる。
+色には役割を持たせる。導入ガイドでは、**黄が「ここを見る・ここが変わる」、
+赤が「お金と鍵——課金が始まる／秘密を漏らす」、青が補助と行き先（リンク・出典・注記）**。
+役割を決めずに三原色を散らすと、警告と手順の区別が付かなくなる。
+
+**黄の面の上は暗い文字のみ。** 明るい文字は 4.5:1 を絶対に通らない。`--on-yellow` を使う。
+
+**SVGに色を直書きしない。** `fill="#D42A20"` と書くとダークモードで別物になる。
 クラスを当ててCSS変数で塗る:
 
 ```html
 <svg viewBox="0 0 240 120" role="img" aria-label="キーの流れ">
-  <rect class="box" x="8" y="8" width="90" height="50" rx="4"/>
-  <text class="label" x="53" y="38" text-anchor="middle">ブラウザ</text>
+  <rect class="box" x="8" y="8" width="90" height="50"/>
+  <text class="t" x="53" y="38" text-anchor="middle">ブラウザ</text>
 </svg>
 ```
 ```css
-svg .box   { fill: var(--card); stroke: var(--line); stroke-width: 3; }
-svg .label { fill: var(--fg); font-size: 13px; }
+svg .box   { fill: var(--card);   stroke: var(--ink); stroke-width: 3; }
+svg .box-y { fill: var(--yellow); stroke: var(--ink); stroke-width: 3; }
+svg .box-r { fill: var(--red);    stroke: var(--ink); stroke-width: 3; }
+svg .box-c { fill: var(--blue);   stroke: var(--ink); stroke-width: 3; }
+svg .t     { fill: var(--ink);       font-size: 13px; }
+svg .t-sub { fill: var(--blue);      font-size: 13px; }
+svg .t-y   { fill: var(--on-yellow); font-size: 13px; }
+svg .t-r   { fill: var(--on-red);    font-size: 13px; }
+svg .t-c   { fill: var(--on-blue);   font-size: 13px; }
 ```
+
+**面と文字は対で使う。** `.box-y` の上は `.t-y`、`.box-r` の上は `.t-r`、`.box-c` の上は `.t-c`。
+地の上の色文字（`.t-sub`）を色面に載せると、その瞬間に 4.5:1 を割る。
 
 `currentColor` と `var(--…)` は使ってよい。検査に引っかかるのは `#rrggbb` と `rgb()` の直書き。
 
@@ -113,37 +134,58 @@ svg .label { fill: var(--fg); font-size: 13px; }
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>はじめての〈サービス名〉</title>
 <style>
-:root{color-scheme:light dark;--bg:#fffdf5;--fg:#12100c;--line:#12100c;
---accent:#ffd23f;--danger:#ff5c5c;--muted:#6b6558;--card:#fff}
-@media(prefers-color-scheme:dark){:root{--bg:#14120e;--fg:#f5f1e6;--line:#f5f1e6;
---accent:#ffcf33;--danger:#ff7a7a;--muted:#a8a091;--card:#1f1c16}}
+/* Bauhaus — 色は赤・黄・青・黒・白の5つだけ。影も角丸もグラデーションも使わない。 */
+:root{color-scheme:light dark;
+--paper:#FFFFFF;--card:#FFFFFF;--ink:#000000;
+--red:#D42A20;--yellow:#FFD500;--blue:#0057B8;
+--on-red:#FFFFFF;--on-yellow:#000000;--on-blue:#FFFFFF;
+--bd:3px;--bd-x:10px}
+@media(prefers-color-scheme:dark){:root{
+--paper:#000000;--card:#000000;--ink:#FFFFFF;
+--red:#FF6B57;--yellow:#FFD500;--blue:#7FB2FF;
+--on-red:#000000;--on-yellow:#000000;--on-blue:#000000}}
 *{box-sizing:border-box}
-body{margin:0;padding:24px 16px 64px;background:var(--bg);color:var(--fg);
-font-family:system-ui,"Hiragino Sans","Noto Sans JP",sans-serif;
+body{margin:0;padding:24px 16px 64px;background:var(--paper);color:var(--ink);
+font-family:Futura,"Century Gothic","Avenir Next","Hiragino Sans","Noto Sans JP",sans-serif;
 line-height:1.8;max-width:720px;margin-inline:auto}
-h1{font-size:1.9rem;line-height:1.35;border-bottom:5px solid var(--line);padding-bottom:12px}
-h2{font-size:1.3rem;margin-top:48px;background:var(--accent);color:#12100c;
-display:inline-block;padding:4px 12px;border:3px solid var(--line);
-box-shadow:4px 4px 0 var(--line)}
+h1{font-size:1.9rem;line-height:1.3;font-weight:900;
+border-bottom:var(--bd-x) solid var(--ink);padding-bottom:12px}
+h2{font-size:1.3rem;margin-top:48px;background:var(--yellow);color:var(--on-yellow);
+display:inline-block;padding:6px 14px;border:var(--bd) solid var(--ink)}
 section{margin-top:8px}
 table{width:100%;border-collapse:collapse;margin:16px 0}
-th,td{border:2px solid var(--line);padding:8px 10px;text-align:left;font-size:.94rem}
-th{background:var(--accent);color:#12100c}
+th,td{border:2px solid var(--ink);padding:8px 10px;text-align:left;font-size:.94rem}
+th{background:var(--yellow);color:var(--on-yellow)}
 .steps{padding-left:0;list-style:none;counter-reset:s}
 .step{counter-increment:s;position:relative;background:var(--card);
-border:3px solid var(--line);box-shadow:5px 5px 0 var(--line);
-padding:14px 16px 14px 52px;margin:14px 0;border-radius:2px}
-.step::before{content:counter(s);position:absolute;left:-3px;top:-3px;
-width:36px;height:36px;display:grid;place-items:center;
-background:var(--line);color:var(--bg);font-weight:700}
+border:var(--bd) solid var(--ink);padding:14px 16px 14px 56px;margin:14px 0}
+.step::before{content:counter(s);position:absolute;left:0;top:0;
+width:40px;height:40px;display:grid;place-items:center;
+background:var(--ink);color:var(--paper);font-weight:700}
 .step code{background:transparent}
-pre{background:var(--card);border:2px solid var(--line);padding:10px;
+pre{background:var(--card);border:2px solid var(--ink);padding:10px;
 overflow-x:auto;font-size:.88rem}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
-.warn{border-left:8px solid var(--danger);background:var(--card);
-border:3px solid var(--line);padding:12px 14px;margin:16px 0}
-.meta{color:var(--muted);font-size:.85rem}
-a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}
+/* 警告は赤。お金が動く・鍵が漏れる、の2つだけに使う。 */
+.warn{background:var(--card);border:var(--bd) solid var(--ink);
+border-left:var(--bd-x) solid var(--red);padding:12px 14px;margin:16px 0}
+.meta{color:var(--blue);font-size:.85rem}
+/* 図の色。面（.box-*）と、その面の上に置く文字（.t-*）は必ず対で使う。 */
+svg{max-width:100%;height:auto}
+svg .box{fill:var(--card);stroke:var(--ink);stroke-width:3}
+svg .box-y{fill:var(--yellow);stroke:var(--ink);stroke-width:3}
+svg .box-r{fill:var(--red);stroke:var(--ink);stroke-width:3}
+svg .box-c{fill:var(--blue);stroke:var(--ink);stroke-width:3}
+svg .t{fill:var(--ink);font-size:13px}
+svg .t-sub{fill:var(--blue);font-size:13px}
+svg .t-y{fill:var(--on-yellow);font-size:13px}
+svg .t-r{fill:var(--on-red);font-size:13px}
+svg .t-c{fill:var(--on-blue);font-size:13px}
+svg .ln{stroke:var(--ink);stroke-width:3;fill:none}
+svg .ar{fill:var(--ink)}
+a{color:var(--blue);text-decoration:underline;
+text-decoration-thickness:2px;text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--red);outline-offset:3px}
 </style>
 </head>
 <body>
