@@ -1,8 +1,4 @@
-.PHONY: build check clean install uninstall
-
-## claude.ai アカウントに上げる dist/*.plugin と dist/skills/*.zip を作る
-build: check
-	@python3 scripts/build.py
+.PHONY: check install uninstall
 
 ## push 前の自己点検
 check:
@@ -15,6 +11,3 @@ install:
 ## 作業場から消す（例: make uninstall name=eli15）
 uninstall:
 	@python3 scripts/install.py uninstall "$(name)"
-
-clean:
-	@rm -rf dist
