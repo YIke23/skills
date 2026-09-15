@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """eli15 が生成した記事HTMLのコントラスト比を測る。
 
-    python3 check_contrast.py article.html
-    python3 check_contrast.py ../assets/base.css      # 配色だけ測る
-    python3 check_contrast.py article.html --min 7    # AAA で見る
+    python3 check_palette.py article.html
+    python3 check_palette.py ../assets/base.css      # 配色だけ測る
+    python3 check_palette.py article.html --min 7    # AAA で見る
 
 2つを見る。
 
@@ -35,23 +35,27 @@ CSS_PAIRS = [
     ("本文 body",                     "--ink",  "--paper"),
     ("カード内の本文 .card",           "--ink",  "--card"),
     ("見出し h1/h2/h3",               "--ink",  "--paper"),
+    ("注記 .meta",                    "--sub",  "--paper"),
     ("補助文字 figcaption",            "--sub",  "--paper"),
-    ("補助文字（カード内）",            "--sub",  "--card"),
+    ("手順の本文 .step",               "--ink",  "--card"),
+    ("手順の証拠 .evidence",           "--sub",  "--card"),
     ("リンク a",                      "--accent", "--paper"),
     ("リンク a（カード内）",           "--accent", "--card"),
     ("強調カードの本文 .card.accent",  "--ink",  "--accent-soft"),
     ("強調カードの見出し h3",          "--on-accent-soft", "--accent-soft"),
     ("強調カードのリンク",             "--accent", "--accent-soft"),
-    ("注意書きの本文 .warn",           "--ink",  "--warn-soft"),
-    ("注意書きの強調 .warn b",         "--warn", "--warn-soft"),
+    ("注意の本文 .warn",               "--ink",  "--warn-soft"),
+    ("注意の強調 .warn b",             "--warn", "--warn-soft"),
     ("危険の本文 .warn.danger",        "--ink",  "--danger-soft"),
     ("危険の強調 .warn.danger b",      "--danger", "--danger-soft"),
+    ("表の見出し th",                  "--sub",  "--paper"),
+    ("表の本体 td",                   "--ink",  "--card"),
+    ("コード pre",                    "--ink",  "--paper"),
     ("図の文字 svg .t",               "--ink",  "--card"),
     ("図の補助文字 svg .t-sub",        "--sub",  "--card"),
+    ("図の強調文字 svg .t-em",         "--accent", "--card"),
     ("図の強調面の文字 svg .t-a",      "--on-accent-soft", "--accent-soft"),
     ("図の警告面の文字 svg .t-w",      "--warn", "--warn-soft"),
-    ("図の強調文字 svg .t-em",         "--accent", "--card"),
-    ("図の強調文字 svg .t-em（地）",   "--accent", "--paper"),
 ]
 
 # 図形の輪郭と矢印。ここは 3:1 を譲らない。
@@ -76,17 +80,17 @@ CSS_OUTLINES = [
 # 線を強くするほど1画面あたりの線の本数が増え、読む前に視線が引っかかるため。
 #
 # なのでここで見るのは「見えるかどうか」だけ。--line を --paper と同じ値に
-# してしまった、といった事故を止めるのがこの検査の仕事で、
-# コントラストの基準を課すことではない。
+# してしまった、といった事故を止めるのがこの検査の仕事。
 CHROME_MIN = 1.15
 CSS_CHROME = [
     ("カードの枠 .card",     "--line", ["--card", "--paper"]),
-    ("節の上の罫 h2",        "--line", ["--paper"]),
+    ("手順の枠 .step",       "--line", ["--card", "--paper"]),
     ("図の枠 figure svg",    "--line", ["--card", "--paper"]),
-    ("参考文献の区切り .further li", "--line", ["--paper"]),
-    ("節のアクセント h2::before",    "--accent", ["--paper"]),
-    ("注意書きの縦線 .warn",  "--warn",   ["--warn-soft"]),
-    ("危険の縦線 .warn.danger", "--danger", ["--danger-soft"]),
+    ("表の外枠 .scroll",     "--line", ["--card", "--paper"]),
+    ("表の罫線 th,td",       "--line", ["--card", "--paper"]),
+    ("コードの枠 pre",       "--line", ["--paper", "--card"]),
+    ("注意の枠 .warn",       "--warn-line",   ["--warn-soft"]),
+    ("危険の枠 .warn.danger", "--danger-line", ["--danger-soft"]),
 ]
 
 SHAPES = ("rect", "circle", "ellipse", "polygon", "polyline")

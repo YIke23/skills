@@ -28,11 +28,30 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
 | 補足・単位・注 | 15 | 18px |
 | 見出し帯の中 | 19 | 22.8px |
 
-**色は属性に直書きせず、クラスで付ける。** `fill="#14213D"` はダークモードで
-取り残される。使えるクラスは `.box` `.box-b` `.box-a` `.t` `.t-sub` `.t-a`
-`.t-hot` `.t-cool` `.ln` `.ar`。
+**色は属性に直書きせず、クラスで付ける。** `fill="#000000"` はダークモードで
+取り残される。使えるのは次の11個だけ。
 
-**琥珀（`.box-a`）の上の文字は必ず `.t-a`。** 明るい文字を載せると 4.5:1 を絶対に通らない。
+| クラス | 何を塗るか |
+|---|---|
+| `.box` | 面。中立。登場人物・工程・要素 |
+| `.box-a` | 面。今回の中心。変わるところ・見てほしいところ |
+| `.box-w` | 面。問題・注意・期限 |
+| `.group` | 囲い。まとまりの境界（塗らず、破線で囲う） |
+| `.t` | 地・`.box` の上の文字 |
+| `.t-sub` | 補助・単位・注 |
+| `.t-em` | 地の上で1語だけ強める |
+| `.t-a` `.t-w` | `.box-a` `.box-w` の面の上の文字 |
+| `.ln` `.ar` | 線と矢じり |
+
+**面と文字は対で使う。** `.box-a` の上は `.t-a`、`.box-w` の上は `.t-w`。
+地の上の色文字（`.t-sub` `.t-em`）を色面に載せると、その瞬間に 4.5:1 を割る。
+
+**面の役割は3つしかない。** 中立（`.box`）、今回の中心（`.box-a`）、問題（`.box-w`）。
+**1枚の図で色の付いた面は1種類までにする。** 中立でない面が増えるほど、
+「で、どこの話？」になる。色は指し示すためにあるので、指す先は1つでいい。
+
+**囲いは `.group`。** 何かが何かを含んでいることを示すときは、塗らずに破線で囲う。
+外枠を塗ると、内側に置いた面と重なって、どちらが囲いなのか分からなくなる。
 
 **矢印に `<marker>` を使わない。** 1ページに図を何枚も置くので、`id` が衝突して
 2枚目以降の矢印が消える。`<polygon class="ar">` で直接描く。
@@ -63,11 +82,11 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
     <text class="t-a"   x="800" y="80"  font-size="17" text-anchor="middle" font-weight="700">公開</text>
     <text class="t-a"   x="800" y="110" font-size="15" text-anchor="middle">本番に反映</text>
   </svg>
-  <figcaption>受付から公開までの3工程。琥珀が今回変えるところ。</figcaption>
+  <figcaption>受付から公開までの3工程。色が付いているのが今回変えるところ。</figcaption>
 </figure>
 ```
 
-**要点は、変わる箱だけを琥珀にすること。** 全部同じ色だと「で、どこの話？」になる。
+**要点は、変わる箱だけを `.box-a` にすること。** 全部同じ面だと「で、どこの話？」になる。
 4工程を超えるなら、それは1枚の図ではなく節を分ける合図。
 
 ## 2. 2カラムの並置
@@ -77,11 +96,11 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
   <svg viewBox="0 0 960 260" xmlns="http://www.w3.org/2000/svg" role="img"
        aria-label="案Aと案Bの比較">
     <rect class="box"   x="20"  y="20" width="440" height="220"/>
-    <rect class="box-b" x="20"  y="20" width="440" height="46"/>
-    <text class="t"     x="240" y="51" font-size="19" text-anchor="middle" font-weight="800">案A ｜ 自前で作る</text>
+    <rect class="box" x="20"  y="20" width="440" height="46"/>
+    <text class="t"   x="240" y="51" font-size="19" text-anchor="middle" font-weight="800">案A ｜ 自前で作る</text>
     <text class="t"     x="46"  y="108" font-size="17">初期費用   0円</text>
     <text class="t"     x="46"  y="146" font-size="17">運用      月20時間</text>
-    <text class="t-hot" x="46"  y="184" font-size="17">開始まで   3か月</text>
+    <text class="t-w" x="46"  y="184" font-size="17">開始まで   3か月</text>
     <text class="t-sub" x="46"  y="214" font-size="15">社内に知見が残る</text>
 
     <rect class="box"   x="500" y="20" width="440" height="220"/>
@@ -89,7 +108,7 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
     <text class="t-a"   x="720" y="51" font-size="19" text-anchor="middle" font-weight="800">案B ｜ SaaSを使う</text>
     <text class="t"     x="526" y="108" font-size="17">初期費用   40万円</text>
     <text class="t"     x="526" y="146" font-size="17">運用      月2時間</text>
-    <text class="t-cool" x="526" y="184" font-size="17">開始まで   2週間</text>
+    <text class="t"     x="526" y="184" font-size="17" font-weight="700">開始まで   2週間</text>
     <text class="t-sub" x="526" y="214" font-size="15">仕様変更に追随できない</text>
   </svg>
   <figcaption>案Aと案Bの比較。差が出るのは「開始まで」と「運用」の2行。</figcaption>
@@ -97,7 +116,8 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
 ```
 
 **行の順番を左右で揃える。** 揃っていないと、目が往復して比較そのものができない。
-差が出ている行だけ `.t-hot` / `.t-cool` で色を変えると、どこを見ればいいかが一目で決まる。
+差が出ている行だけ `.t-w` にすると、どこを見ればいいかが一目で決まる。
+良い側は色を足さず、太字の `.t` で受ける。両側に色を付けると、どちらが問題なのかが消える。
 
 ## 3. 入れ子のボックス
 
@@ -105,8 +125,8 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
 <figure>
   <svg viewBox="0 0 960 280" xmlns="http://www.w3.org/2000/svg" role="img"
        aria-label="社内システムの構成">
-    <rect class="box-b" x="20" y="20" width="920" height="240"/>
-    <text class="t" x="44" y="52" font-size="19" font-weight="800">社内システム</text>
+    <rect class="group" x="20" y="20" width="920" height="240"/>
+    <text class="t-sub" x="44" y="52" font-size="19" font-weight="700">社内システム</text>
 
     <rect class="box" x="48"  y="74" width="270" height="160"/>
     <text class="t"     x="183" y="120" font-size="17" text-anchor="middle" font-weight="700">受注</text>
@@ -124,13 +144,15 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
 </figure>
 ```
 
-**外枠は `.box-b`（沈めた帯）、中身は `.box`。** 同じ色で重ねると入れ子に見えない。
+**外枠は `.group`（塗らない破線）、中身は `.box`（塗る）。**
+外枠を塗ると内側の面と重なり、どちらが囲いなのか分からなくなる。
+囲いの名前は `.t-sub` で小さく置く。主役は中の箱であって、囲いではない。
 
 ## 4. 横バー
 
 ```html
 <figure>
-  <svg viewBox="0 0 960 220" xmlns="http://www.w3.org/2000/svg" role="img"
+  <svg viewBox="0 0 960 232" xmlns="http://www.w3.org/2000/svg" role="img"
        aria-label="工程別の所要時間">
     <text class="t"     x="20" y="44"  font-size="17">手作業</text>
     <rect class="box"   x="180" y="24" width="700" height="40"/>
@@ -144,7 +166,7 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
     <rect class="box-a" x="180" y="168" width="83" height="40"/>
     <text class="t"     x="279" y="195" font-size="17" font-weight="700">5分</text>
 
-    <text class="t-sub" x="180" y="215" font-size="15">社内計測（2026-09-10、n=20）</text>
+    <text class="t-sub" x="180" y="226" font-size="15">社内計測（2026-09-10、n=20）</text>
   </svg>
   <figcaption>1件あたりの所要時間。全自動は手作業の 1/8。</figcaption>
 </figure>
@@ -160,7 +182,7 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
 <figure>
   <svg viewBox="0 0 960 260" xmlns="http://www.w3.org/2000/svg" role="img"
        aria-label="再実行するかどうかの判断">
-    <rect class="box-b" x="330" y="20" width="300" height="70"/>
+    <rect class="box" x="330" y="20" width="300" height="70"/>
     <text class="t" x="480" y="62" font-size="17" text-anchor="middle" font-weight="700">失敗を検知</text>
 
     <path class="ln" d="M480 90 V120 H190 V158"/>
@@ -192,7 +214,7 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
     <rect class="box"   x="20"  y="30" width="400" height="140"/>
     <text class="t-sub" x="40"  y="62"  font-size="15">いま</text>
     <text class="t"     x="40"  y="100" font-size="17">申請 → 課長 → 部長 → 経理</text>
-    <text class="t-hot" x="40"  y="140" font-size="17" font-weight="700">平均 4.2日</text>
+    <text class="t-w" x="40"  y="140" font-size="17" font-weight="700">平均 4.2日</text>
 
     <path class="ln" d="M432 100 H508"/>
     <polygon class="ar" points="508,92 524,100 508,108"/>
@@ -227,7 +249,7 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
     <text class="t-sub"   x="420" y="140" font-size="15" text-anchor="middle">2部署へ拡大</text>
 
     <circle class="box-a" cx="700" cy="96" r="18"/>
-    <text class="t-hot"   x="700" y="62"  font-size="17" text-anchor="middle" font-weight="800">2月</text>
+    <text class="t-w"   x="700" y="62"  font-size="17" text-anchor="middle" font-weight="800">2月</text>
     <text class="t"       x="700" y="140" font-size="15" text-anchor="middle" font-weight="700">全社展開</text>
   </svg>
   <figcaption>導入の日程。2月の全社展開が、今日決めたい判断の期限。</figcaption>
@@ -242,12 +264,12 @@ font-size 15 が 18px、17 が 20.4px で出る。ここを勝手に広げると
 <figure>
   <svg viewBox="0 0 960 260" xmlns="http://www.w3.org/2000/svg" role="img"
        aria-label="通知が届くまでのやりとり">
-    <rect class="box-b" x="60"  y="20" width="200" height="50"/>
-    <text class="t"     x="160" y="52" font-size="17" text-anchor="middle" font-weight="700">利用者</text>
-    <rect class="box-b" x="380" y="20" width="200" height="50"/>
-    <text class="t"     x="480" y="52" font-size="17" text-anchor="middle" font-weight="700">アプリ</text>
-    <rect class="box-b" x="700" y="20" width="200" height="50"/>
-    <text class="t"     x="800" y="52" font-size="17" text-anchor="middle" font-weight="700">通知基盤</text>
+    <rect class="box" x="60"  y="20" width="200" height="50"/>
+    <text class="t"   x="160" y="52" font-size="17" text-anchor="middle" font-weight="700">利用者</text>
+    <rect class="box" x="380" y="20" width="200" height="50"/>
+    <text class="t"   x="480" y="52" font-size="17" text-anchor="middle" font-weight="700">アプリ</text>
+    <rect class="box" x="700" y="20" width="200" height="50"/>
+    <text class="t"   x="800" y="52" font-size="17" text-anchor="middle" font-weight="700">通知基盤</text>
 
     <path class="ln" d="M160 70 V240" stroke-dasharray="6 6"/>
     <path class="ln" d="M480 70 V240" stroke-dasharray="6 6"/>
