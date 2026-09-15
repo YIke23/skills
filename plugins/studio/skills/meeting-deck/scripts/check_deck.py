@@ -435,7 +435,7 @@ def check_svg(r: Report, html: str, themes: dict[str, dict[str, str]], css: str,
                            if c in palette and "fill" in palette[c]), None)
                 if fg is None:
                     r.warn(f"[{theme}] {where}: 文字色のクラスが無い。"
-                           "`.t` `.t-sub` `.t-y` などを付ける")
+                           "`.t` `.t-sub` `.t-a` などを付ける")
                     break
                 shape_tag, shape_cls = under
                 bg = next((palette[c]["fill"] for c in reversed(shape_cls)

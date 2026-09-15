@@ -1,0 +1,190 @@
+/* paas-onboarding base stylesheet — Soft Slate
+ *
+ * 導入ガイドは読み物ではなく作業台。コンソールとエディタを行き来しながら
+ * 「今どの手順にいるか」を何度も探し直す読まれ方をする。
+ * だから eli15 / meeting-deck の Warm Paper とは別の組版にしてある。
+ * 手順・警告・表が、拾い読みでも塊として見つかることを優先した。
+ *
+ * 淡い地(#F8FAFC)の上に白いカードを置く。手順の1つ1つが独立した面になるので、
+ * 「3番まで終わった」が目で分かる。長い文章を通して読ませる設計ではない。
+ *
+ * 色はすべてライト/ダーク両方で測ってある。値を変えると崩れる。
+ * 変えたくなったら check_palette.py で測り直してから変えること。
+ *
+ * 使い方: この中身を <style> にそのまま貼り、必要な分だけ足す。
+ * 外部から読み込まない。HTML1枚で完結させるため。
+ */
+
+:root{
+  color-scheme:light dark;
+
+  --paper:#F8FAFC;          /* 地。ページ全体 */
+  --card:#FFFFFF;           /* カード・手順・表の塗り。地より明るく、浮いて見える */
+  --ink:#1E293B;            /* 本文 */
+  --sub:#5C6B80;            /* 補助。注記・出典・確認日 */
+
+  /* 色には役割を持たせる。役割を決めずに散らすと、警告と手順の区別が付かなくなる。 */
+  --accent:#1D4ED8;         /* ここを見る・行き先。リンクと手順番号 */
+  --accent-soft:#EFF6FF;
+  --on-accent-soft:#1E40AF;
+
+  --warn:#9A4708;           /* ここでつまずく。設定の取り違え・戻せない選択 */
+  --warn-soft:#FFFBEB;
+  --warn-line:#FCD34D;
+
+  --danger:#C81E1E;         /* お金が動く・鍵が漏れる。この2つだけに使う */
+  --danger-soft:#FEF2F2;
+  --danger-line:#FCA5A5;
+
+  --line:#E2E8F0;           /* 罫線。境界を示すが、主張はしない */
+  --line-strong:#7C8AA0;    /* 図の輪郭と矢印。図形は意味を持つので 3:1 を確保する */
+
+  --measure:45em;
+  --r:12px;
+  --shadow:0 1px 2px rgba(15,23,42,.05), 0 1px 3px rgba(15,23,42,.05);
+}
+
+/* ダークは反転ではなく作り直し。カードを地より明るくする関係だけ保つ。 */
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#0F141A; --card:#1A212B; --ink:#E5EAF0; --sub:#94A3B8;
+    --accent:#60A5FA; --accent-soft:#16233A; --on-accent-soft:#BFDBFE;
+    --warn:#E0A33E; --warn-soft:#241E12; --warn-line:#6B5220;
+    --danger:#F98080; --danger-soft:#2A1A1A; --danger-line:#6B2A2A;
+    --line:#2A3441; --line-strong:#64748B;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+
+*{box-sizing:border-box}
+
+/* 書体は外部から読み込まない。HTML1枚で完結させる約束があるので、
+ * Google Fonts を1行足した時点で、配布先で書体が黙って崩れる。 */
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",
+              "Hiragino Sans","Hiragino Kaku Gothic ProN",
+              "BIZ UDPGothic",Meiryo,sans-serif;
+  font-size:16.5px; line-height:1.88;
+  -webkit-font-smoothing:antialiased;
+}
+
+.sheet{max-width:var(--measure); margin:0 auto; padding:2.6rem 1.4rem 5rem}
+
+h1{
+  font-size:2rem; line-height:1.45; font-weight:700; letter-spacing:-.015em;
+  margin:.4rem 0 1rem; font-feature-settings:"palt" 1; text-wrap:balance;
+}
+h2{
+  font-size:1.3rem; line-height:1.6; font-weight:700; letter-spacing:-.01em;
+  margin:3rem 0 1.1rem; font-feature-settings:"palt" 1;
+}
+h3{font-size:1.02rem; font-weight:700; margin:1.9rem 0 .5rem}
+
+p{margin:0 0 1.15rem}
+.lede{font-size:1.08rem}
+ul,ol{margin:0 0 1.15rem; padding-left:1.35em}
+li{margin:0 0 .45rem}
+.meta{color:var(--sub); font-size:.88rem}
+
+/* ── 手順 ───────────────────────────────────────────────
+ * 1手順 = 1カード。拾い読みされるので、どこまで終わったかが目で分かる必要がある。
+ * 番号は塗りつぶした円にする。手順の中でいちばん探されるのが番号なので、
+ * ここだけはアクセントを使い切ってよい。 */
+.steps{list-style:none; padding:0; margin:1.6rem 0; counter-reset:s}
+.steps .step{
+  counter-increment:s; position:relative;
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--shadow); padding:1.1rem 1.2rem 1.1rem 3.4rem; margin:0 0 .85rem;
+}
+.steps .step::before{
+  content:counter(s); position:absolute; left:1.1rem; top:1.15rem;
+  width:1.6rem; height:1.6rem; display:grid; place-items:center;
+  background:var(--accent); color:#FFFFFF; border-radius:999px;
+  font-size:.8rem; font-weight:700; line-height:1;
+}
+.steps .step > :first-child{margin-top:0}
+.steps .step > :last-child{margin-bottom:0}
+
+/* 証拠の等級。手順ごとに、実画面で見たのか文書だけなのかを隠さない。 */
+.evidence{display:block; margin-top:.6rem; font-size:.78rem; color:var(--sub)}
+
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--shadow); padding:1.3rem 1.4rem; margin:1.8rem 0;
+}
+.card > :first-child{margin-top:0}
+.card > :last-child{margin-bottom:0}
+.card.accent{background:var(--accent-soft); border-color:transparent; box-shadow:none}
+.card.accent h3{color:var(--on-accent-soft)}
+
+/* 注意と危険。囲う色を変えるのではなく、地の色で役割を分ける。
+ * 危険は「お金が動く・鍵が漏れる」の2つだけ。ここを増やすと誰も読まなくなる。 */
+.warn{
+  background:var(--warn-soft); border:1px solid var(--warn-line);
+  border-radius:var(--r); padding:1.05rem 1.2rem; margin:1.6rem 0;
+}
+.warn b{color:var(--warn)}
+.warn.danger{background:var(--danger-soft); border-color:var(--danger-line)}
+.warn.danger b{color:var(--danger)}
+
+figure{margin:2rem 0; padding:0}
+figure svg{
+  width:100%; height:auto; display:block;
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--shadow);
+}
+figcaption{font-size:.84rem; line-height:1.7; color:var(--sub); margin-top:.7rem}
+
+/* ── 図の色 ─────────────────────────────────────────────
+ * SVGの色はここから引く。属性に直書きするとダークで取り残される。
+ * 図形は装飾ではなく意味を持つので、輪郭は 3:1 を確保してある。
+ * 面（.box-*）と、その面の上に置く文字（.t-*）は必ず対で使う。 */
+svg .box   {fill:var(--card);        stroke:var(--line-strong); stroke-width:1.5}
+svg .box-a {fill:var(--accent-soft); stroke:var(--accent);      stroke-width:1.5}
+svg .box-w {fill:var(--warn-soft);   stroke:var(--warn);        stroke-width:1.5}
+/* まとまりの境界。塗らずに破線で囲う。中に別の面を置くので、
+ * ここを塗ると内側の面と重なって、どちらが囲いなのか分からなくなる。 */
+svg .group {fill:none; stroke:var(--line-strong); stroke-width:1.5; stroke-dasharray:6 4}
+svg .t     {fill:var(--ink);            font-size:13px}
+svg .t-sub {fill:var(--sub);            font-size:12px}
+svg .t-em  {fill:var(--accent);         font-size:13px}
+svg .t-a   {fill:var(--on-accent-soft); font-size:13px}
+svg .t-w   {fill:var(--warn);           font-size:13px}
+svg .ln    {stroke:var(--line-strong); stroke-width:1.5; fill:none}
+svg .ar    {fill:var(--line-strong)}
+
+/* ── 表 ─────────────────────────────────────────────────
+ * 無料枠とプランの比較が必ず入る。狭い画面では横スクロールに逃がす。
+ * 縮小して全列を入れると、その瞬間に誰も読めない表になる。 */
+.scroll{
+  overflow-x:auto; margin:1.7rem 0;
+  border:1px solid var(--line); border-radius:var(--r);
+  background:var(--card); box-shadow:var(--shadow);
+}
+table{border-collapse:collapse; width:max-content; min-width:100%; font-size:.92rem}
+th,td{padding:.65rem .9rem; text-align:left; vertical-align:top;
+      border-bottom:1px solid var(--line); max-width:22em}
+th{background:var(--paper); color:var(--sub); font-weight:600; font-size:.88em}
+tr:last-child td{border-bottom:0}
+
+pre{
+  overflow-x:auto; margin:.7rem 0 0; padding:.7rem .9rem;
+  background:var(--paper); border:1px solid var(--line); border-radius:8px;
+  font-size:.86rem;
+}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9em}
+pre code{font-size:1em}
+
+a{color:var(--accent); text-decoration:none; font-weight:500}
+a:hover{text-decoration:underline}
+
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  .sheet{padding:1.8rem 1.1rem 3.5rem}
+  h1{font-size:1.65rem}
+  .steps .step{padding:1rem 1.05rem 1rem 3.1rem}
+  .card{padding:1.15rem}
+}

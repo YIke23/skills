@@ -125,8 +125,11 @@ changelogを先に見る。**直近3〜6か月にコンソール改修があれ�
 
 ### 4. HTMLを書く
 
-規約は `references/html.md`。単一ファイル、外部CDNなし、`color-scheme: light dark`。
-見た目は Bauhaus で固定（赤・黄・青・黒・白の5色、ベタ塗り、影も角丸もなし）。
+規約は `references/html.md`。単一ファイル、外部CDNなし、外部フォントなし、
+`color-scheme: light dark`。見た目は `assets/base.css`（Soft Slate）で固定。
+淡い地に白いカードを置き、1手順 = 1カードにする。導入ガイドは読み物ではなく
+作業台で、拾い読みされるため。**eli15 / meeting-deck の CSS は流用しない**——
+あちらは長文を通して読ませるための別の組版。
 手順は必ずこの形にする:
 
 ```html
@@ -215,6 +218,7 @@ python3 scripts/check_guide.py <出力.html> \
   changelogの見つけ方、取得できなかったときの書き方
 - `references/structure.md` — 9セクションそれぞれの中身の作り方、ELI15の水準、
   語彙対応表の作り方、スコープ別の出し入れ
-- `references/html.md` — 単一HTMLの規約、`data-*` 属性の契約、フォールバック骨格
-  （`eli15` スキルが同じ環境にあるなら、その規約と `assets/base.css` を流用して二重管理しない）
+- `references/html.md` — 単一HTMLの規約、`data-*` 属性の契約、図の色、骨格
+- `assets/base.css` — Soft Slate の配色と組版。ライト/ダーク両方で測定済み
 - `scripts/check_guide.py` — 証拠等級・出典・取得日・秘密情報の混入・外部依存を機械的に検査する
+- `scripts/check_palette.py` — 配色のコントラストを測る。`base.css` に手を入れたときだけ使う
