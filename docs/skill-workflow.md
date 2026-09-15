@@ -64,7 +64,7 @@ Cowork を使うのは次の3つに限る。
 `make install name=<x>` / `make uninstall name=<x>` は実装済み（2026-09-06）。中身は
 `scripts/install.py` で、Makefile からはこれを呼ぶだけ。
 
-- `make install name=<x>` — `skills/<x>/` を `~/.claude/skills/<x>/` へ写す。既にあれば
+- `make install name=<x>` — `plugins/*/skills/<x>/` を `~/.claude/skills/<x>/` へ写す。既にあれば
   入れ替える。**引数なしの全件コピーは作らない**
 - `make uninstall name=<x>` — `~/.claude/skills/<x>/` を消す。マージ後の後片付け用。
   無ければ黙って skip するので、二重に叩いても壊れない
@@ -77,24 +77,22 @@ Cowork を使うのは次の3つに限る。
 `uninstall` のあとに他のスキルが残っていれば警告する。ただし作業場が完全に空になることは
 無く、`notion-weekly-progress` と `notion-weekly-progress-docs` は常に警告に出る（上の例外）。
 
-## 2. 新しくスキルを作る → ブランチを切って書き、marketplace.json に登録する
+## 2. 新しくスキルを作る → ブランチを切って、束ねたいプラグインの下に置く
 
-marketplace.json への登録が要るのは、この場面だけ。
+どのプラグインに属するかはフォルダで決まる。`marketplace.json` は触らない
+（触るのはプラグインそのものを新設するときだけ）。
 
 1. **先に既存を調べる。** `skill-prior-art` を回して、同じ仕事をするスキルが公開されていないか確認する。採用で済むならここで終わる
 2. `cd ~/dev/skills && git switch -c add-<name>` — main では作業しない
-3. `cp -r template skills/<name>` して SKILL.md を書く
+3. `cp -r template plugins/<plugin>/skills/<name>` して SKILL.md を書く。`<plugin>` は `studio` / `skill-kit` / `git-flow` のいずれか
 4. `make check` — frontmatter の形式やフォルダ名の一致を機械が見る
 5. `make install name=<name>` して Claude Code を再起動し、**実際に呼んで発火するか確かめる**。description を書き間違えても静かに呼ばれなくなるだけなので、ここを飛ばすと気づけない
-6. `.claude-plugin/marketplace.json` の該当プラグインに `./skills/<name>` を足す。**これを忘れると個人Mac には永久に届かない**
-7. `git push -u origin add-<name>` → `gh pr create` → PR をマージ
-8. `make uninstall name=<name>` で作業場を空に戻す。以降はプラグイン版が担当する
+6. `git push -u origin add-<name>` → `gh pr create` → PR をマージ
+7. `make uninstall name=<name>` で作業場を空に戻す。以降はプラグイン版が担当する
 
-## 3. スキルを更新する → 同じ道を通る。marketplace.json は触らない
+## 3. スキルを更新する → 同じ道を通る
 
-道筋は2章と同じで、違いは二つだけ。
-
-**marketplace.json は触らない。** パスは既に登録済みで、中身が変わっても一覧は変わらない。
+道筋は2章と同じ。フォルダを作らず既存の SKILL.md を直すだけなので、違いは一つ。
 
 **手元での確認をより厚くする。** 新規なら「呼べない」とすぐ分かるが、更新は「今までどおり呼べるが挙動だけ変わった」という壊れ方をする。`make check` を通したあと `make install name=<name>` して、変えた部分を実際に踏むところまでやる。
 
@@ -122,36 +120,21 @@ marketplace.json への登録が要るのは、この場面だけ。
 | `~/dev/skills/docs` | このガイドと設計記録の置き場。スキル本体と同じ履歴で追える |
 | `~/.claude/skills` | 書いている途中の1本を置く作業場。`notion-weekly-progress` とその調査記録だけが常駐する |
 | GitHub main | 公開先。保護されていて直接 push できない |
-| `marketplace.json` | どのスキルをどのプラグインとして配るかの一覧。新規追加のときだけ更新する |
+| `marketplace.json` | プラグインの一覧。`name` と `source` だけ。プラグイン新設のときだけ更新する |
+| `plugins/<plugin>/skills/` | ここに置いたものがそのプラグインとして配られる。所属はフォルダで決まる |
 | `studio` / `skill-kit` / `git-flow` | 配布用のプラグイン3つ |
 | `plugin update` | 各 Mac が GitHub から取り込む操作 |
 
-## studio に git 系が混ざるのは、上げたバンドルが古いから
+## studio に git 系が混ざっていた件は解消済み（2026-09-15）
 
-`studio:git-commit` と `git-flow:git-commit` が並んで見えることがある。**`marketplace.json` の
-割り当ては正しく効いており、リポジトリの構成を変える必要はない。**（2026-09-06 確認）
+`studio:git-commit` と `git-flow:git-commit` が並ぶ症状があった。原因は
+**claude.ai とデスクトップアプリが `marketplace.json` の `skills` 配列を読まず、
+プラグインルート直下の `skills/` を総なめすること。** `source: "./"` だったため
+リポジトリ全体が配られ、他プラグインのスキルまで `studio:` に入っていた。
 
-原因は、claude.ai アカウントへ上げた `studio.plugin` バンドルが古いこと。実物はこの形で
-残っていた。
+`plugins/<plugin>/skills/` へ分けて `source` をそこへ向けたことで解消した。
+経緯と、2 回外した診断の記録は `skill-distribution-pipeline.md` の
+「プラグインの二重登録」にある。
 
-```
-.../rpm/plugin_<id>/.claude-plugin/plugin.json の skills 配列   → 4 本
-.../rpm/plugin_<id>/skills/ の中身                              → 9 本
-```
-
-バンドルに 9 本ぶんのフォルダが同梱されているため、git 系まで `studio:` で引けてしまう。
-`git-flow` に同じ症状が出ないのは、`git-flow` をアカウントに上げていないから。
-
-直し方は `make build` して `dist/studio.plugin` を **Customize > Plugins** に上げ直すだけ。
-手順は README の「studio に git 系が混ざるのは、上げたバンドルが古いから」にある。
-**marketplace 側は触らない。**
-
-検討していた「1プラグインに統合」「ディレクトリを分ける」は、どちらも原因に当たらないため
-採らない。判断の根拠は `skill-distribution-pipeline.md` の「プラグインの二重登録」にある。
-
-## 詰まったとき
-
-フラット化を試して戻した経緯、`~/.claude/skills` を作業ツリーにする構想がなぜ成立しなかったか、他に検討した接続案は `skill-distribution-pipeline.md` にある。
-
-最終更新 2026-09-13。`make install` / `make uninstall` は実装済みで、2章と3章の手順はそのまま実行できる。
-2026-09-13 に、作業場が空にならない例外（`notion-weekly-progress`）を1章に追記した。
+再発を疑うときは、アカウントのプラグイン画面で「スキル」タブの本数を見る。
+`studio` なら 7 本。CLI 側は `claude plugin details studio@yike-skills` で確かめる。
