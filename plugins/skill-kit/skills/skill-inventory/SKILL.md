@@ -39,6 +39,10 @@ publish してリンクを渡す。60行を超える表をターミナルに流�
 | デスクトップのスキル | `local-agent-mode-sessions/skills-plugin/<B>/<A>/` | — | claude.ai の設定 |
 | ユーザー / プロジェクト | `~/.claude/skills/`、`<repo>/.claude/skills/` | 無し | 手 |
 
+同じ marketplace.json でも系統によって結果が変わる点に注意する。CLI は
+`skills` 配列で絞り込むが、claude.ai とデスクトップは配列を読まずプラグインルートの
+`skills/` を総なめする。`source: "./"` のリポジトリでは、ここで本数が食い違う。
+
 `claude plugin list` は上の表の**2行目しか返さない**。デスクトップ側は
 `installed_plugins.json` に載らないので、CLI だけを見ると `anthropic-skills:*` や
 `design:*` が丸ごと消える。逆に `ls ~/.claude/skills` はプラグイン由来を1件も含まない。

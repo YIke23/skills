@@ -166,6 +166,38 @@ def skill_dirs(root: Path) -> list[Path]:
                   if d.is_dir() and (d / "SKILL.md").is_file())
 
 
+def repo_skill_dirs(root: Path) -> list[Path]:
+    """リポジトリのクローンから、スキルのフォルダを全部拾う。
+
+    レイアウトは2通りある。`skills/<name>/` をルート直下に並べるものと、
+    `plugins/<plugin>/skills/<name>/` のようにプラグインごとに束ねるもの
+    （anthropics/claude-plugins-official と YIke23/skills がこちら）。
+    どちらか一方しか見ないと、その形のリポジトリを丸ごと取りこぼす。
+    """
+    out = list(skill_dirs(root / "skills"))
+    pdir = root / "plugins"
+    if pdir.is_dir():
+        for d in sorted(x for x in pdir.iterdir() if x.is_dir()):
+            out.extend(skill_dirs(d / "skills"))
+    return out
+
+
+def declared_paths(entry: dict) -> list[str]:
+    """そのプラグインの中身にあたるパス（リポジトリルート相対）。
+
+    `skills` 配列があればそれを使う。**配列は無いほうが新しい。** 配列を読まない
+    実装（claude.ai / デスクトップ）があるため、いまは source の下に置いた
+    フォルダ構造で配布単位を決める形に寄せてある。その場合は source ごと返す。
+    """
+    paths = [s for s in (entry.get("skills") or []) if isinstance(s, str)]
+    if paths:
+        return paths
+    src = entry.get("source")
+    if isinstance(src, str) and src not in ("", "./", "."):
+        return [src]
+    return []
+
+
 def file_map(root: Path) -> dict[str, str]:
     """スキルディレクトリ配下の相対パス → 中身の sha256（先頭12桁）。
 
@@ -266,8 +298,10 @@ def collect_marketplaces(binary: str | None, do_fetch: bool) -> list[dict]:
                     if isinstance(p, dict) and p.get("name"):
                         entry["plugins_declared"].append({
                             "name": p["name"],
-                            "skill_paths": [s for s in (p.get("skills") or [])
-                                            if isinstance(s, str)],
+                            "source": p.get("source"),
+                            "skill_paths": declared_paths(p),
+                            "skill_names": [d.name for d in skill_dirs(
+                                loc / str(p.get("source") or ".").lstrip("./") / "skills")],
                         })
         out.append(entry)
     return out
@@ -592,7 +626,7 @@ def compare_loose(loose: list[dict], marketplaces: list[dict],
             ahead, behind = (int(x) for x in counts.split())
         except ValueError:
             ahead = behind = None
-        for d in skill_dirs(wc / "skills"):
+        for d in repo_skill_dirs(wc):
             refs.setdefault(d.name, []).append({
                 "path": d, "marketplace": "(作業クローン)",
                 "remote": origin.strip(), "head_sha": head.strip(),
@@ -604,7 +638,7 @@ def compare_loose(loose: list[dict], marketplaces: list[dict],
         loc = mp.get("install_location")
         if not loc or not mp.get("is_git"):
             continue
-        for d in skill_dirs(Path(loc) / "skills"):
+        for d in repo_skill_dirs(Path(loc)):
             refs.setdefault(d.name, []).append({
                 "path": d, "marketplace": mp.get("name"),
                 "remote": mp.get("remote"), "head_sha": mp.get("head_sha"),
@@ -698,7 +732,8 @@ def find_shadowed(marketplaces: list[dict], plugins: list[dict],
         for decl in mp.get("plugins_declared", []):
             if (mp.get("name"), decl["name"]) in have:
                 continue
-            names = [Path(s.rstrip("/")).name for s in decl["skill_paths"]]
+            names = decl.get("skill_names") or [
+                Path(s.rstrip("/")).name for s in decl["skill_paths"]]
             overlap = sorted(set(names) & loose_names)
             if not overlap:
                 continue
