@@ -5,10 +5,10 @@
 ## 確認
 
 - [ ] `make check` が通る（CI でも走る）
-- [ ] 新規スキルなら `marketplace.json` の `skills` 配列に足した
+- [ ] 新規スキルを `plugins/<plugin>/skills/` の下に置いた
 - [ ] `description` に呼ばれたい場面を書いた（ここが薄いと呼ばれない）
 
 ## マージ後にやること
 
 - [ ] Mac 2 台で `claude plugin update <plugin>@yike-skills` → 再起動
-- [ ] claude.ai アカウントに配るなら `make build` して `dist/studio.plugin` を上げ直す
+- [ ] claude.ai アカウント 2 つで Customize > Skills の該当プラグインを「更新」

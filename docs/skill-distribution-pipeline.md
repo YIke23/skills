@@ -6,11 +6,15 @@
 
 **スキル作りは会社Mac の Claude Code で一気通貫。工程を Cowork と分担しない。**（2026-09-06）
 
-**レイアウトは anthropics/skills 準拠を維持する。`skills/<name>/` を変えない。**
-リポジトリのルートを `~/.claude/skills` に一致させるための「フラット化」は**中止した**。
+**レイアウトはプラグインごとに `plugins/<plugin>/skills/<name>/` で束ねる。**（2026-09-15）
+[anthropics/claude-plugins-official](https://github.com/anthropics/claude-plugins-official) と同じ形。
+**これは「`skills/<name>/` を変えない」という 2026-09-06 の決定を差し替えたもの**
+（理由は下の「プラグインの二重登録」）。
+
+リポジトリのルートを `~/.claude/skills` に一致させるための「フラット化」は**中止のまま**。
 このドキュメントの旧版に書かれていたフラット化の手順は、実行してはいけない。
 
-接続方式は **`make install` によるコピー**に決定（2026-09-05）。`~/dev/skills/skills/*` を `~/.claude/skills/` へ写す。symlink 案と worktree 案は下の表のとおり検討したうえで採らなかった。**2026-09-06 に `scripts/install.py` として実装済み**（仕様は `skill-workflow.md` の「深掘りノート: make install の仕様」）。
+接続方式は **`make install` によるコピー**に決定（2026-09-05）。`plugins/*/skills/<name>` を `~/.claude/skills/` へ写す。symlink 案と worktree 案は下の表のとおり検討したうえで採らなかった。**2026-09-06 に `scripts/install.py` として実装済み**（仕様は `skill-workflow.md` の「深掘りノート: make install の仕様」）。
 
 ## 2026-09-06 の判断: 分担をやめる
 
@@ -68,60 +72,52 @@ GitHub 側で失われたものは無い。`make sync` は revert に含まれ�
 導入済み sha `583eb49` と main `9f341e3` の差は README.md だけなので、**プラグイン版が数コミット
 遅れていてもスキル本体は最新**。慌てて `plugin update` する必要はない。
 
-## プラグインの二重登録: 構成変更は要らない
+## プラグインの二重登録: 構成を変えて解消した（2026-09-15）
 
-`studio:git-commit` と `git-flow:git-commit` が並ぶ件。旧版は原因を「両プラグインの `source` が
-どちらも `"./"` で、`skills` 配列の絞り込みが効いていない」と推定していた。**この推定は誤り。**
+`studio:git-commit` と `git-flow:git-commit` が並ぶ件。**診断を 2 回外した記録として残す。**
 
-### 絞り込みは効いている
+| 版 | 推定した原因 | 判定 |
+|---|---|---|
+| 初版 | 両プラグインの `source` が `"./"` で `skills` 配列の絞り込みが効いていない | 誤り（CLI では効いている） |
+| 2版（2026-09-06） | アカウントに上げた `.plugin` バンドルが古い。上げ直せば直る | 誤り（バンドルではなく GitHub 連携だった） |
+| **確定（2026-09-15）** | **claude.ai とデスクトップは `skills` 配列を読まない。`source: "./"` でリポジトリ全体が配られ、他プラグインのスキルまで同じ名前空間に入っていた** | 解消済み |
 
-`git-flow` が反証になる。
+### 何を見誤ったか
+
+2版は `git-flow` が正しく 4 本に絞れていることを反証に使い、「配列は効いている」と結論した。
+**これは CLI しか見ていなかった。** `git-flow` はアカウントに上げていないので、
+そもそも配列を読まない実装に触れていない。効いているように見えたのは、症状が出る経路を
+通っていなかっただけだった。
+
+実測（2026-09-15、Claude Code 2.1.270）。
 
 | 見るもの | 中身 |
 |---|---|
-| `~/.claude/plugins/cache/yike-skills/git-flow/<sha>/skills/` | 9 フォルダ（リポジトリ全体の複製） |
-| 実際に生えるスキル | `skills` 配列に書いた 5 本のうち 4 本 |
+| アカウント側 `studio` の `plugin.json` の `skills` 配列 | 7 本 |
+| 同じツリーの `skills/` | 15 フォルダ |
+| CLI で生えた数 | 7 本 |
+| claude.ai / デスクトップで生えた数 | **15 本** |
 
-`source: "./"` はリポジトリ全体を複製するので、キャッシュには必ず 9 フォルダが並ぶ。
-**フォルダの数は根拠にならない。** 同じ `source: "./"` を使っていて `git-flow` は絞れている。
+同梱ツリーに `Makefile` `docs/` `scripts/` `.github/` まで入っていた。`build.py` が作る
+バンドルにこれらは入らないので、**アカウントのものは手で上げたバンドルではない**と分かる。
+`manifest.json` の `marketplaceName` もリポジトリ名の `skills` で、GitHub 連携だった。
 
-5 本に対して 4 本なのは `create-branch` に `disable-model-invocation: true` が付いているため。
-明示的に `/git-flow:create-branch` と叩いたときだけ動く。配布の失敗ではない。
+### 採った手
 
-### 混ざっているのは inline のほう
+**配布単位をフォルダで区切る。** `source: "./plugins/<name>"` にして、`skills` 配列を廃止した。
+配列を読む実装も読まない実装も、同じフォルダを見るので結果が一致する。
 
-`studio` だけ実体が二重にある。marketplace 版とは別に、claude.ai アカウントへ上げた `.plugin`
-バンドルが入っており、その中身が 9 本ある。
+2026-09-06 に退けた「ディレクトリを分ける」案そのものだが、当時の判断材料が
+「既に上げたバンドルの中身は変わらないので直らない」だったのに対し、実際の配布経路は
+GitHub 連携で、リポジトリを直せばアカウントにも届く。**前提が違っていた。**
 
-```
-.../rpm/plugin_01Dzt7trPpH4REHvpeBGFi83/.claude-plugin/plugin.json の skills 配列   → 4 本
-.../rpm/plugin_01Dzt7trPpH4REHvpeBGFi83/skills/ の中身                              → 9 本
-```
+あわせて `scripts/build.py` と `make build` を廃止した。GitHub 連携で同じことができ、
+手で上げる経路は「アカウントだけ古い」という気づきにくい壊れ方を持ち込むため。
 
-`studio` が 8 本見えるのは、この 9 フォルダから `create-branch` を引いた数と一致する。
-`git-flow` に同じ症状が出ないのは、`git-flow` をアカウントに上げていないから。
+### 教訓
 
-### 2案の判断材料
-
-原因が inline バンドルである以上、**どちらの案も症状に当たらない。**
-
-| 案 | 二重登録が直るか | 代償 |
-|---|---|---|
-| **1プラグインに統合** | **直らない。** 古いバンドルがアカウントに残る限り `studio:` は 9 本を出し続ける | `studio` / `git-flow` の呼び分けを失う。`git-flow` をアカウントに上げない運用も崩れる |
-| **ディレクトリを分ける** | **直らない。** `source` をサブディレクトリへ向けてもキャッシュの複製範囲が変わるだけで、既に上げたバンドルの中身は変わらない | `7d737f5` が寄せた anthropics/skills 準拠のレイアウトを捨てる。PR #4 で一度壊した道と同じ |
-
-**採る手は「どちらも採らない」。** `scripts/build.py` は `skills` 配列を回して該当フォルダだけを
-staging へ写すので、いまビルドすれば 4 本のバンドルができる。上げ直せば直る。
-
-```bash
-make build
-python3 -c "import zipfile; z=zipfile.ZipFile('dist/studio.plugin'); print(sorted({n.split('/')[1] for n in z.namelist() if n.startswith('skills/') and n.count('/') > 1}))"
-```
-
-4 本であることを確かめてから `dist/studio.plugin` を **Customize > Plugins** に上げ直す。
-会社と個人で 1 回ずつ。**marketplace 側は触らない。** 手順は README にも同じものがある。
-
-差し替えはリポジトリの変更ではなく手作業なので、コミットには現れない。上げ直したらこの節に日付を書き足す。
+**系統をまたぐ症状は、症状が出ている系統で確かめる。** 出ていない系統を反証に使うと、
+今回のように 2 回続けて外す。`skill-inventory` が系統別に数えるのはこのため。
 
 ## 未確認 / 未実装
 

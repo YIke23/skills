@@ -1,29 +1,39 @@
 # skills
 
 Claude のスキルを 1 箇所で管理し、2 台の Mac と 2 つの claude.ai アカウントへ配るリポジトリ。
-構成は [anthropics/skills](https://github.com/anthropics/skills) に合わせてある。
+構成は [anthropics/claude-plugins-official](https://github.com/anthropics/claude-plugins-official)
+に合わせ、プラグインごとに `plugins/<name>/` で束ねている。
 
 ## 概要
 
 ### 置き場所
 
 ```
-.claude-plugin/marketplace.json   どのスキルをどのプラグインに束ねるかの定義
-skills/<skill-name>/SKILL.md      スキル本体。1 フォルダ 1 スキル、フラットに並べる
-template/SKILL.md                 新しいスキルを作るときの雛形
-scripts/                          アカウント配布用のビルドと、push 前の点検、作業場への出し入れ
-docs/                             運用ガイドと設計判断の記録
+.claude-plugin/marketplace.json          プラグインの一覧。name と source だけを書く
+plugins/<plugin>/.claude-plugin/         そのプラグインの plugin.json
+plugins/<plugin>/skills/<name>/SKILL.md  スキル本体。1 フォルダ 1 スキル
+template/SKILL.md                        新しいスキルを作るときの雛形
+scripts/                                 push 前の点検と、作業場への出し入れ
+docs/                                    運用ガイドと設計判断の記録
 ```
 
-スキルの所属はフォルダ構造ではなく `marketplace.json` の `skills` 配列で決まる。
-束ね方を変えたいときは JSON を直すだけでよく、ファイルは動かさない。
-この絞り込みは marketplace 経由でも効く。キャッシュにはリポジトリ全体が複製されるが、
-生えるのは配列に書いたものだけ（→ studio に git 系が混ざる件）。
+**スキルの所属はフォルダ構造で決まる。** `plugins/<plugin>/skills/` に置いたものが、
+そのプラグインとして配られる。`marketplace.json` に `skills` 配列は書かない。
+
+書かないのは、**配列を読む実装と読まない実装があるから**。CLI は配列で絞り込むが、
+claude.ai とデスクトップアプリは配列を無視してプラグインルート直下の `skills/` を
+総なめする。かつて `source: "./"` に配列を添えて束ねていたときは、CLI では 7 本、
+デスクトップでは 15 本という食い違いが起きていた（→ studio に git 系が混ざる件）。
+`source` をプラグインごとに切れば、どの実装でも同じ結果になる。
+
+束ね方を変えるときはフォルダを動かす。`template/` `scripts/` `docs/` はどの `source` にも
+入らないので、配布物には含まれない。
 
 | プラグイン | 中身 | 配布先 |
 |---|---|---|
-| `studio` | web-image-builder, icon-builder, eli15, paas-onboarding | Mac + claude.ai アカウント |
-| `git-flow` | create-branch, git-commit, create-pr, release-pr, create-issue | Mac のみ（手元の git を触るため） |
+| `studio` | web-image-builder, icon-builder, sns-icon-builder, eli15, meeting-deck, paas-onboarding, doc-brief | Mac + claude.ai アカウント |
+| `skill-kit` | skill-prior-art, skill-inventory | Mac + claude.ai アカウント |
+| `git-flow` | create-branch, git-commit, create-pr, merge-pr, release-pr, create-issue | Mac のみ（手元の git を触るため） |
 
 呼び出しは `/studio:eli15` のように `プラグイン名:スキル名` になる。
 
@@ -37,7 +47,7 @@ anthropics/skills も同じく `anthropic-agent-skills` という別名を持つ
 |---|---|
 | **Claude Cowork** | 着手前の調査、SKILL.md の下書き、外部サービスからの材料集め |
 | **Claude Code**（`~/dev/skills` で起動） | ファイルの編集、`make` 系、git と PR、`claude plugin` 操作 |
-| **手作業** | claude.ai 管理画面へのアップロード、PR のマージ |
+| **手作業** | claude.ai 管理画面での「更新」、PR のマージ |
 
 **Cowork はこのリポジトリのファイルを直接編集しない。** `~/.claude` 配下は保護領域として
 接続を拒否されるため、そもそも届かない。`~/dev/skills` には届くが、git 操作もコマンド実行も
@@ -49,6 +59,7 @@ Claude Code のほうが素直に回る。Cowork の持ち場は、書く前に�
 ```bash
 claude plugin marketplace add git@github.com:YIke23/skills.git
 claude plugin install studio@yike-skills
+claude plugin install skill-kit@yike-skills
 claude plugin install git-flow@yike-skills
 ```
 
@@ -80,22 +91,22 @@ claude plugin install git-flow@yike-skills
 スキルは保存した瞬間に効くので、試行錯誤が速い。プラグイン経由だと commit → PR → マージ →
 `plugin update` → 再起動を回さないと反映されない。
 
-形が固まったら、このリポジトリの `skills/` へ**移す**。コピーではなく移動。両方に残すと
+形が固まったら、束ねたいプラグインの下へ**移す**。コピーではなく移動。両方に残すと
 裸の `/git-commit` と `/git-flow:git-commit` が併存して紛らわしい。
 
 ```bash
 cd ~/dev/skills
 git switch -c skill/<name>
-mv ~/.claude/skills/<name> skills/<name>
-# marketplace.json の skills 配列に ./skills/<name> を足す
+mv ~/.claude/skills/<name> plugins/<plugin>/skills/<name>
 make check
 git add -A && git commit -m "add: <name> スキルを追加"
 git push -u origin skill/<name>
 gh pr create
 ```
 
-`marketplace.json` への追記を忘れると、**そのスキルは他のマシンへ永久に届かない。**
-新規のときだけ必要な手順で、更新では触らない。
+`marketplace.json` を触るのは**プラグインを新設するときだけ**。既存プラグインへ
+スキルを足すなら、フォルダを置けば届く。`make check` が `plugins/` と
+`marketplace.json` の食い違いを見るので、置き忘れと書き忘れはそこで止まる。
 
 check が緑になったら GitHub でマージする。マージ後の反映は 3 と 4 へ。
 
@@ -108,7 +119,7 @@ Cowork は文面の相談に使ってもよいが、必須ではない。実作�
 ```bash
 cd ~/dev/skills
 git switch -c fix/<name>
-# skills/<name>/SKILL.md を直す
+# plugins/<plugin>/skills/<name>/SKILL.md を直す
 make check
 make install name=<name>   # 試用のため。Claude Code を再起動して実際に呼ぶ
 git add -A && git commit -m "fix: <name> の〇〇を直す"
@@ -129,6 +140,7 @@ gh pr create
 ```bash
 claude plugin marketplace update yike-skills
 claude plugin update studio@yike-skills
+claude plugin update skill-kit@yike-skills
 claude plugin update git-flow@yike-skills
 ```
 
@@ -147,26 +159,22 @@ claude plugin update git-flow@yike-skills
 claude plugin marketplace remove <古い marketplace 名>
 claude plugin marketplace add git@github.com:YIke23/skills.git
 claude plugin install studio@yike-skills
+claude plugin install skill-kit@yike-skills
 claude plugin install git-flow@yike-skills
 ```
 
 ### 4. スキルを claude.ai アカウントに配る
 
-ビルドは Claude Code、アップロードは手作業。アカウント側は GitHub を見に行かないので、
-ここだけ自動化できない。
+アカウント側は GitHub リポジトリを marketplace として見ている。**ビルドもアップロードも
+要らない。** Customize > Skills でプラグインを開き、**「更新」を押す**だけ。
+会社と個人で 1 回ずつ、計 2 回。
 
-```bash
-make build          # dist/ に .plugin と skills/*.zip ができる
-```
+反映できたかは、そのプラグインの「スキル」タブの本数で確かめる。`studio` なら 7 本。
+数が合わないときは配布単位の切り方を疑う（→ studio に git 系が混ざる件）。
 
-`dist/studio.plugin` を **Customize > Plugins** に上げる。会社と個人で 1 回ずつ、計 2 回。
-4 スキルが 1 ファイルに入っているので、これだけで済む。
-
-`skills` 配列を変えたら必ず上げ直すこと。上げっぱなしにすると古い構成がアカウント側に
-残り、`studio:` に余計なスキルが並ぶ（→ studio に git 系が混ざる件）。
-
-素の `/eli15` で呼びたい場合だけ `dist/skills/eli15.zip` を **Customize > Skills** に上げる。
-スキル 1 本 = zip 1 つなので、増やすほど手作業が増える。
+`.plugin` を作って手で上げる経路（`make build` と `scripts/build.py`）は 2026-09-15 に
+廃止した。GitHub 連携で同じことができるうえ、上げ忘れると**アカウントだけ古い**という
+気づきにくい壊れ方をするため。
 
 `git-flow` はアカウントに上げない。手元の git を触るスキルなので使い道がない。
 
@@ -197,63 +205,47 @@ main に入るには次の 4 つが揃っている必要がある。
 **Settings > Rules > Rulesets** から該当ルールセットを開き、Enforcement status を
 Disabled にする。作業が終わったら Active に戻す。**戻し忘れないこと。**
 
-`make check` は SKILL.md の `name` とフォルダ名の一致、`description` の有無と長さ、
-どのプラグインにも属していないスキルを見る。description が 1536 字を超えると
-切り捨てられて意図した場面で呼ばれなくなるため、ここで止める。
+`make check` が見るのは 2 つ。**スキル単体の形式**として、SKILL.md の `name` とフォルダ名の
+一致、`description` の有無と長さ。1536 字を超えると切り捨てられ、意図した場面で呼ばれなく
+なるため、ここで止める。**配布の構成**として、`marketplace.json` と `plugins/` の対応、
+`plugin.json` との description の一致、そしてリポジトリ直下の `skills/` や `skills` 配列が
+復活していないこと。
 
-## studio に git 系が混ざるのは、上げたバンドルが古いから
+## studio に git 系が混ざるのは、配布単位がリポジトリ全体だったから
 
-`studio:git-commit` と `git-flow:git-commit` が並んで見えることがある。原因は
-`marketplace.json` ではなく、**claude.ai アカウントに上げた `studio.plugin` が古いまま**
-であること。marketplace 側を消して入れ直しても直らない。
+`studio:git-commit` と `git-flow:git-commit` が並んで見える状態が長く続いた。
+**2026-09-15 に原因を特定して解消した。** 同じ症状が再発したときのために残す。
 
-### marketplace の絞り込みは効いている
+### 原因は配列が読まれないこと
 
-`source: "./"` はリポジトリ全体を複製するので、キャッシュには必ず 9 本ぶんのフォルダが
-並ぶ。ここを見て「配列が無視されている」と誤診しやすい。**フォルダの数は根拠にならない。**
+かつては全プラグインが `source: "./"` で、どれを生やすかを `marketplace.json` の
+`skills` 配列で指定していた。**この配列を読むのは CLI だけ。** claude.ai と
+デスクトップアプリは配列を無視し、プラグインルート直下の `skills/` を総なめする。
 
-`git-flow` が反証になる。
+`source: "./"` はリポジトリ全体を配るので、アカウント側の `studio` には 15 本ぶんの
+フォルダが入っていた。結果、宣言は 7 本なのに 15 本生え、git 系まで `studio:` で引けた。
 
-| 見るもの | 中身 |
+| 見るもの | 当時の中身 |
 |---|---|
-| `~/.claude/plugins/cache/yike-skills/git-flow/<sha>/skills/` | 9 フォルダ（リポジトリ全体の複製） |
-| 実際に生えるスキル | `skills` 配列に書いた 5 本だけ |
+| `plugin.json` の `skills` 配列 | 7 本 |
+| 同じツリーの `skills/` | 15 フォルダ |
+| CLI で実際に生えた数 | 7 本 |
+| claude.ai / デスクトップで生えた数 | **15 本** |
 
-同じ `source: "./"` を使っていて `git-flow` は絞れている。つまり配列は効いている。
-
-### 混ざっているのは inline のほう
-
-`studio` だけ実体が二重にある。marketplace 版とは別に、アカウントへ上げた `.plugin`
-バンドルが **`studio@inline`** として入っており、この中身が 9 本ある。
-
-```
-.../rpm/plugin_<id>/.claude-plugin/plugin.json の skills 配列   → 4 本
-.../rpm/plugin_<id>/skills/ の中身                              → 9 本
-```
-
-バンドルに 9 本ぶんのフォルダが同梱されているため、git 系まで `studio:` で引けてしまう。
-`git-flow` に同じ症状が出ないのは、`git-flow` をアカウントに上げていないから。
+`git-flow` に同じ症状が出なかったのは、アカウントに上げていなかったから。
+つまり「配列は効いている」という当時の診断は、CLI しか見ていなかったせいで半分だけ正しかった。
 
 ### 直し方
 
-`scripts/build.py` は `skills` 配列を回して該当フォルダだけを staging へ写す。いまビルド
-すれば 4 本のバンドルができるので、上げ直せば直る。
+**配布単位をフォルダで区切る。** `plugins/<plugin>/skills/` に置き、`source` をそこへ
+向ければ、配列を読む実装も読まない実装も同じ結果になる。いまのレイアウトがこれ。
 
-```bash
-make build
-python3 -c "import zipfile; z=zipfile.ZipFile('dist/studio.plugin'); print(sorted({n.split('/')[1] for n in z.namelist() if n.startswith('skills/') and n.count('/') > 1}))"
-```
-
-4 本であることを確かめてから `dist/studio.plugin` を **Customize > Plugins** に上げ直し、
-古いものと差し替える。会社と個人で 1 回ずつ。**marketplace 側は触らない。**
-
-旧名の `pr-flow` がアカウントに残っていれば、あわせて消す。差し替えが済むまでは、git 系
-スキルの正式な呼び名を `git-flow:` とする。`studio:git-commit` も引けてしまうが、指して
-いるファイルは同じなので挙動は変わらない。
+再発を疑うときは、アカウントのプラグイン画面で「スキル」タブの本数を見る。
+`studio` が 7 本以外なら、`source` がプラグインのサブディレクトリを指しているか確認する。
 
 ### 補足: `create-branch` が一覧に出ないのは正常
 
-`skills/create-branch/SKILL.md` には `disable-model-invocation: true` が付いている。
+`plugins/git-flow/skills/create-branch/SKILL.md` には `disable-model-invocation: true` が付いている。
 モデルが自動で選ぶ一覧には出ず、`/git-flow:create-branch` と明示的に叩いたときだけ動く。
 `studio:` にも `git-flow:` にも見えないのはこのためで、配布の失敗ではない。
 

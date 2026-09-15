@@ -6,6 +6,9 @@
 
 ~/.claude/skills は完成品の置き場ではなく、書いている途中の1本を置く作業場。
 全件コピーは作らない（プラグイン版と二重に並ぶため）。
+
+スキルの実体は plugins/<plugin>/skills/<name>/。どのプラグインに属するかを
+呼び出し側が知らなくていいよう、名前だけで探す。
 """
 import shutil, sys, pathlib
 
@@ -23,8 +26,19 @@ def resolve_name(name):
     if not name:
         die("name= が空。使い方: make install name=<skill>")
     if name in (".", "..") or "/" in name or "\\" in name or name.startswith("."):
-        die(f"name={name!r} は不正。skills/ 直下のフォルダ名を1つだけ渡す")
+        die(f"name={name!r} は不正。スキルのフォルダ名を1つだけ渡す")
     return name
+
+
+def find_skill(name):
+    """plugins/*/skills/<name>/ を横断で探す。見つからなければ候補を出して止まる。"""
+    hits = sorted(d for d in ROOT.glob(f"plugins/*/skills/{name}") if (d / "SKILL.md").is_file())
+    if len(hits) > 1:
+        die(f"{name} が複数のプラグインにある: " + ", ".join(h.parent.parent.name for h in hits))
+    if not hits:
+        avail = ", ".join(sorted(d.name for d in ROOT.glob("plugins/*/skills/*") if d.is_dir()))
+        die(f"plugins/*/skills/{name}/SKILL.md がない。あるのは: {avail}")
+    return hits[0]
 
 
 def dest_for(name):
@@ -36,10 +50,7 @@ def dest_for(name):
 
 
 def install(name):
-    src = ROOT / "skills" / name
-    if not (src / "SKILL.md").is_file():
-        avail = ", ".join(sorted(d.name for d in (ROOT / "skills").iterdir() if d.is_dir()))
-        die(f"skills/{name}/SKILL.md がない。あるのは: {avail}")
+    src = find_skill(name)
 
     dest = dest_for(name)
     WORKSPACE.mkdir(parents=True, exist_ok=True)
@@ -50,7 +61,7 @@ def install(name):
         shutil.rmtree(dest)
     shutil.copytree(src, dest)
 
-    print(f"{'更新' if replaced else 'コピー'} skills/{name} → {dest}")
+    print(f"{'更新' if replaced else 'コピー'} {src.relative_to(ROOT)} → {dest}")
     print("Claude Code を再起動して、実際に呼んで発火するか確かめる。")
     print(f"終わったら make uninstall name={name} で作業場を空に戻す。")
 

@@ -4,47 +4,35 @@
     "name": "YIke"
   },
   "metadata": {
-    "description": "YIke の自作スキル。Mac には plugin marketplace 経由、claude.ai アカウントには dist/*.plugin を手で配る。"
+    "description": "YIke の自作スキル。プラグインごとに plugins/<name>/ で束ね、marketplace 経由で Mac と claude.ai アカウントへ配る。"
   },
   "plugins": [
     {
       "name": "studio",
       "description": "画像・アイコン生成（favicon / アプリ / SNS）、PaaS 導入ガイド、新書レベルの解説記事づくり、要点だけに絞った社内ドキュメント作成、書き上げた md からの会議資料づくり",
-      "source": "./",
-      "strict": false,
-      "skills": [
-        "./skills/web-image-builder",
-        "./skills/icon-builder",
-        "./skills/sns-icon-builder",
-        "./skills/eli15",
-        "./skills/meeting-deck",
-        "./skills/paas-onboarding",
-        "./skills/doc-brief"
-      ]
+      "author": {
+        "name": "YIke"
+      },
+      "source": "./plugins/studio",
+      "strict": false
     },
     {
       "name": "skill-kit",
       "description": "スキルを扱うための道具立て。着手前に先行事例を調べて作るか既存を使うかを決め、入っているスキルの出自と GitHub との差分を棚卸しする",
-      "source": "./",
-      "strict": false,
-      "skills": [
-        "./skills/skill-prior-art",
-        "./skills/skill-inventory"
-      ]
+      "author": {
+        "name": "YIke"
+      },
+      "source": "./plugins/skill-kit",
+      "strict": false
     },
     {
       "name": "git-flow",
       "description": "ブランチ作成・コミット・PR 作成（通常・本番リリース）・マージと後始末・Issue 起票まで、git と GitHub まわりの定型作業",
-      "source": "./",
-      "strict": false,
-      "skills": [
-        "./skills/create-branch",
-        "./skills/git-commit",
-        "./skills/create-pr",
-        "./skills/merge-pr",
-        "./skills/release-pr",
-        "./skills/create-issue"
-      ]
+      "author": {
+        "name": "YIke"
+      },
+      "source": "./plugins/git-flow",
+      "strict": false
     }
   ]
 }
