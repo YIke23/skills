@@ -5,6 +5,8 @@
 除外する。これらを含めて数えると、読者が実際に必要としているコマンドや設定値を
 削る圧力がかかり、字数を守った結果として使えない文書ができあがるため。
 
+地の文の字数から読了時間（500字＝1分）も出す。ヘッダの「読了時間」はこの数字を写す。
+
 使い方:
     python3 count.py <file> [--limit N] [--json]
 
@@ -13,14 +15,19 @@
 
 import argparse
 import json
+import math
 import re
 import sys
 from pathlib import Path
 
 DEFAULT_LIMIT = 5000
 
+# 読了速度。SKILL.md §1 の上限表（1,200字≒2〜3分 / 2,500字≒5分 / 5,000字≒10分）と同じ基準。
+CHARS_PER_MIN = 500
+
 # ヘッダのメタ行。読者が読み下す文ではなく、文書の属性なので数えない。
-META_LINE = re.compile(r"^\s*(作成日|最終更新日|更新日|作成者|著者|版|バージョン)\s*[:：]")
+META_LINE = re.compile(
+    r"^\s*(読了時間|読了目安|作成日|最終更新日|更新日|作成者|著者|版|バージョン)\s*[:：]")
 
 FENCE = re.compile(r"^\s*(```|~~~)")
 TABLE_ROW = re.compile(r"^\s*\|")
@@ -47,6 +54,14 @@ def prose_chars(line: str) -> int:
     s = INLINE_CODE_TICKS.sub("", s)  # バッククォート記号だけ落とし、中身は数える
     s = re.sub(r"[*_~]{1,3}", "", s)  # 強調記号
     return len(re.sub(r"\s", "", s))
+
+
+def reading_minutes(chars: int) -> int:
+    """地の文の字数から読了時間（分）を返す。切り上げ、下限1分。
+
+    切り上げるのは、短めに出た見積もりが読者の予定を裏切るほうが高くつくため。
+    """
+    return max(1, math.ceil(chars / CHARS_PER_MIN))
 
 
 def analyze(text: str):
@@ -118,6 +133,7 @@ def main() -> int:
     if args.json:
         print(json.dumps({
             "file": str(path), "total": total, "limit": args.limit,
+            "reading_minutes": reading_minutes(total),
             "over": over, "sections": sections, "excluded_lines": excluded,
         }, ensure_ascii=False, indent=2))
         return 2 if over else 0
@@ -139,6 +155,7 @@ def main() -> int:
         print(f"  合計 {total:,} / {args.limit:,}字  （残り {args.limit - total:,}字）")
     else:
         print(f"  合計 {total:,}字")
+    print(f"  読了時間 約{reading_minutes(total)}分  （ヘッダの「読了時間」にこの数字を写す）")
     print(f"  除外した行: コード {excluded['code']} / 表 {excluded['table']} / メタ {excluded['meta']}")
 
     if over:
