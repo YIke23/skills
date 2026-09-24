@@ -82,7 +82,11 @@
  * vw だけで決めないのは、ブラウザの拡大（⌘+）が効かなくなるため。 */
 html{font-size:clamp(16px, 8px + .5vw, 24px)}
 
-/* 20px は「後ろの席で読める」ではなく「Zoom で縮小されても読める」ための下限。
+/* 本文だけ rem（ルート基準）で決め、ほかの文字はすべて em（本文基準）で決める。
+ * rem で書くとルートの 16px が基準になり、見出し h3 やキャプションが本文の 20px より
+ * 小さく出る（キャプション .85rem = 13.6px。共有で縮むと 10px を割る）。
+ *
+ * 20px は「後ろの席で読める」ではなく「Zoom で縮小されても読める」ための下限。
  * 画面共有は受け手側で 70〜80% に縮むことがあり、17px だと 13px 相当まで落ちる。
  *
  * 書体は外部から読み込まない。HTML1枚で完結させる約束があるので、
@@ -108,7 +112,7 @@ body{
 }
 .rail a{
   display:inline-block; margin-right:.4rem; padding:.28rem .75rem;
-  font-size:.8rem; font-weight:600; line-height:1.5;
+  font-size:.8em; font-weight:600; line-height:1.5;
   color:var(--sub); background:transparent;
   border:1px solid var(--line); border-radius:999px; text-decoration:none;
 }
@@ -133,18 +137,18 @@ body{
 /* 資料の分類。帯で塗らず、小さな文字で置く。 */
 .eyebrow{
   display:inline-block; margin:0 0 .5rem;
-  font-size:.76rem; font-weight:700; letter-spacing:.06em; color:var(--sub);
+  font-size:.8em; font-weight:700; letter-spacing:.06em; color:var(--sub);
 }
 
 h1{
-  font-size:2.2rem; line-height:1.4; font-weight:700;
+  font-size:2em; line-height:1.4; font-weight:700;
   margin:.4rem 0 1.2rem; color:var(--ink);
   font-feature-settings:"palt" 1;
   word-break:auto-phrase;          /* 日本語を文節で折る。「月 約 / $38」のような割れを防ぐ */
 }
 
 h2{
-  font-size:1.35rem; line-height:1.55; font-weight:700; color:var(--ink);
+  font-size:1.35em; line-height:1.55; font-weight:700; color:var(--ink);
   margin:0 0 1.3rem; font-feature-settings:"palt" 1;
 }
 /* 番号と見出しを2列に分ける。flex + wrap だと、見出しが1行に収まらなくなった
@@ -160,10 +164,10 @@ h2 .n{
   font-variant-numeric:tabular-nums;
 }
 
-h3{font-size:1.05rem; font-weight:700; margin:2rem 0 .5rem; color:var(--ink)}
+h3{font-size:1.05em; font-weight:700; margin:2rem 0 .5rem; color:var(--ink)}
 
 p{margin:0 0 1.15rem; text-align:left}   /* 両端揃えにしない */
-.lede{font-size:1.1rem}
+.lede{font-size:1.1em}
 ul,ol{margin:0 0 1.15rem; padding-left:1.4em}
 li{margin:0 0 .5rem}
 
@@ -195,7 +199,7 @@ figure svg{
   background:var(--card); border:1px solid var(--line); border-radius:var(--r);
 }
 figcaption{
-  font-size:.85rem; line-height:1.75; color:var(--sub);
+  font-size:.85em; line-height:1.75; color:var(--sub);
   margin-top:.8rem;
 }
 
@@ -223,10 +227,10 @@ svg .ar    {fill:var(--line-strong)}
  * 数字が3つ並んだときに枠のほうが先に目に入る。 */
 .stats{display:flex; flex-wrap:wrap; gap:1.4rem; margin:1.8rem 0}
 .stat{flex:1 1 12rem; border-top:2px solid var(--line-strong); padding:.9rem 0 0}
-.stat b{display:block; font-size:2.1rem; line-height:1.2; font-weight:700;
+.stat b{display:block; font-size:2.1em; line-height:1.2; font-weight:700;
         letter-spacing:-.02em; font-variant-numeric:tabular-nums}
-.stat span{display:block; font-size:.85rem; line-height:1.6; color:var(--sub); margin-top:.35rem}
-.stat cite{display:block; font-size:.74rem; font-style:normal; color:var(--sub); margin-top:.45rem}
+.stat span{display:block; font-size:.85em; line-height:1.6; color:var(--sub); margin-top:.35rem}
+.stat cite{display:block; font-size:.8em; font-style:normal; color:var(--sub); margin-top:.45rem}
 
 /* ── 表 ─────────────────────────────────────────────────
  * 会議資料で最も潰れるのが表。狭い画面では必ず横スクロールに逃がす。
@@ -247,7 +251,7 @@ svg .ar    {fill:var(--line-strong)}
  * width:max-content なら、列の幅は中身の量で決まる（実測 51 / 116 / 234 / 324…）。
  * 1行の高さは 130px に収まり、幅が足りなければ .scroll が横スクロールを出す。
  * min-width:100% は、中身が少ない表が紙面より狭く縮むのを防ぐためのもの。 */
-table{border-collapse:collapse; width:max-content; min-width:100%; font-size:.92rem}
+table{border-collapse:collapse; width:max-content; min-width:100%; font-size:.92em}
 
 /* 1セルの上限。これが無いと、長い文が1行に伸びて表が数千pxになる。 */
 th,td{padding:.7rem .95rem; text-align:left; border-bottom:1px solid var(--line);
@@ -272,8 +276,8 @@ a{color:var(--accent); text-decoration:underline; text-underline-offset:.18em}
 @media (max-width:640px){
   body{font-size:18px}
   .deck{padding-top:1.5rem; padding-bottom:4rem}
-  h1{font-size:1.75rem}
-  h2{font-size:1.15rem}
+  h1{font-size:1.75em}
+  h2{font-size:1.15em}
   .panel{padding:2.2rem 0 2rem}
   .pair{grid-template-columns:1fr}
   .card{padding:1.2rem}
