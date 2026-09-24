@@ -110,6 +110,10 @@ md が一時フォルダ（`/tmp`、`/private/tmp`、`/var/folders`、scratchpad
 
 どれも `check_deck.py` が不適合で止め、`shoot_deck.py` が描画して余白を実測する。
 
+見出しや数値が句の途中で折れたら（「月 約 / $38」）、その句だけを `<span class="nw">` で包む。
+`style="white-space:nowrap"` や `&nbsp;` を直書きしない。見出しは文節で、段落は最後の行が
+1〜2字にならないよう、`deck.css` が折り返しを調整している。
+
 見た目は **Warm Paper で固定**（eli15 と同じ配色）。決まりごとは4つだけで、
 どれも `deck.css` に入っている。足すときだけ気をつければいい。
 

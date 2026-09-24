@@ -167,6 +167,15 @@ h2 .n{
 h3{font-size:1.05em; font-weight:700; margin:2rem 0 .5rem; color:var(--ink)}
 
 p{margin:0 0 1.15rem; text-align:left}   /* 両端揃えにしない */
+
+/* 段落の最後の行が1〜2字だけになるのを避ける（Chrome / Safari）。
+ * 紙面の幅は画面で変わるので、1つの幅に合わせて文を直しても別の幅で崩れる。
+ * 折り返しの側で吸収する。見出しは auto-phrase で文節ごとに折っている。 */
+p,li,figcaption,.lede{text-wrap:pretty}
+
+/* 句を途中で折らせたくないときに包む（「月 約 $38」「asteria と気圧ケア」など）。
+ * style 属性に直書きしない。長い句を包むと狭い画面で横にはみ出すので、1行に収まる短い句だけ。 */
+.nw{white-space:nowrap}
 .lede{font-size:1.1em}
 ul,ol{margin:0 0 1.15rem; padding-left:1.4em}
 li{margin:0 0 .5rem}
