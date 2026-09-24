@@ -14,8 +14,20 @@
  *
  * eli15 との違いは3つ。どれも「投影して喋る」ための差分。
  *   1. 本文が 17px → 20px。後ろの席とZoomの縮小に耐える下限
- *   2. 本文の幅と図の幅を分けた。本文は 34em、図は紙面いっぱい
+ *   2. 紙面にも本文にも最大幅を置かない。画面の幅から左右の余白（--gutter）を
+ *      引いた残りを、本文も図も使い切る
  *   3. 節を .panel で区切り、上部に節の索引を固定した。会議では上から順に読まれない
+ *
+ * ── 幅を固定しない理由 ────────────────────────────────────
+ * 投影と画面共有では、画面全体が壁やZoomの窓に合わせて拡大縮小される。
+ * 読めるかどうかを決めるのは「px の絶対値」ではなく「画面の幅に対する割合」で、
+ * 2000px の画面に 680px の本文の柱を立てると、右の 6 割が空いたまま共有される。
+ * 本文の行も短く折れ、1文が4〜5行に割れて改行が崩れる。
+ *
+ * だから幅の上限は置かず、左右の余白だけをここで決める。
+ * max-width / width / min-width を本文・見出し・紙面に足さないこと。
+ * padding に 50vw や calc(50% - …) を入れて余白で幅を作るのも同じ固定。
+ * どちらも check_deck.py が不適合で止める。
  */
 
 :root{
@@ -38,8 +50,14 @@
   --line:#E3DFD8;           /* 罫線。境界を示すが、主張はしない */
   --line-strong:#8E887F;    /* 図の輪郭と矢印。図形は意味を持つので 3:1 を確保する */
 
-  --measure:34em;           /* 本文の幅。20px で約 34 字 */
-  --stage:60em;             /* 紙面の幅。図はここまで広げてよい */
+  /* 左右の余白。紙面の幅はこれだけで決まる（画面の幅 − 余白×2）。
+   *   画面   800 → 余白 24px  / 紙面  752px
+   *   画面  1280 → 余白 82px  / 紙面 1117px
+   *   画面  1600 → 余白 120px / 紙面 1360px
+   *   画面  2000 → 余白 168px / 紙面 1664px
+   * 狭い画面では最小の 24px まで詰め、広い画面では片側が画面の 8〜9% になる。
+   * 狭い側で余白を取りすぎると、図が縮んで図中の文字が 14px を割る。 */
+  --gutter:max(24px, 12vw - 72px);
   --r:4px;
 }
 
@@ -55,6 +73,15 @@
 
 *{box-sizing:border-box}
 
+/* 文字の大きさの基準。1600px までは 16px（本文 20px）のまま、それより広い画面では
+ * 少しずつ大きくする（2000px で本文 22.5px、2560px で 25px）。
+ *
+ * 図は紙面の幅に比例して伸びるので、本文だけ 20px に据え置くと、広い画面では
+ * 図中の文字が本文の 1.7 倍を超えて図だけが浮く。共有された側では逆に本文が
+ * 縮んで読めなくなる。基準を画面の幅に少しだけ連動させて、両者の比を保つ。
+ * vw だけで決めないのは、ブラウザの拡大（⌘+）が効かなくなるため。 */
+html{font-size:clamp(16px, 8px + .5vw, 24px)}
+
 /* 20px は「後ろの席で読める」ではなく「Zoom で縮小されても読める」ための下限。
  * 画面共有は受け手側で 70〜80% に縮むことがあり、17px だと 13px 相当まで落ちる。
  *
@@ -65,7 +92,7 @@ body{
   font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",
               "Hiragino Sans","Hiragino Kaku Gothic ProN",
               "BIZ UDPGothic",Meiryo,sans-serif;
-  font-size:20px; line-height:1.9;
+  font-size:1.25rem; line-height:1.9;
   -webkit-font-smoothing:antialiased;
 }
 
@@ -76,7 +103,7 @@ body{
 .rail{
   position:sticky; top:0; z-index:10;
   background:var(--paper); border-bottom:1px solid var(--line);
-  padding:.55rem .8rem; overflow-x:auto; white-space:nowrap;
+  padding:.55rem var(--gutter); overflow-x:auto; white-space:nowrap;   /* 索引も本文と同じ左端に揃える */
   scrollbar-width:thin;
 }
 .rail a{
@@ -90,15 +117,7 @@ body{
   background:var(--accent-soft); color:var(--on-accent-soft); border-color:var(--accent);
 }
 
-.deck{max-width:var(--stage); margin:0 auto; padding:2rem 1.5rem 6rem}
-
-/* 本文だけ狭く保つ。図は .deck の幅いっぱいまで広げる。
- * 図が主役でも、文は 34em を超えると読み返しづらくなる。 */
-.panel > p,
-.panel > ul,
-.panel > ol,
-.panel > .lede,
-.panel > h3{max-width:var(--measure)}
+.deck{padding:2rem var(--gutter) 6rem}
 
 /* ── 節 ─────────────────────────────────────────────────
  * 節の切れ目は太い罫ではなく余白で作る。1画面に2つの論点が同時に映ると、
@@ -119,18 +138,23 @@ body{
 
 h1{
   font-size:2.2rem; line-height:1.4; font-weight:700;
-  margin:.4rem 0 1.2rem; color:var(--ink); max-width:var(--measure);
-  font-feature-settings:"palt" 1; text-wrap:balance;
+  margin:.4rem 0 1.2rem; color:var(--ink);
+  font-feature-settings:"palt" 1;
+  word-break:auto-phrase;          /* 日本語を文節で折る。「月 約 / $38」のような割れを防ぐ */
 }
 
 h2{
   font-size:1.35rem; line-height:1.55; font-weight:700; color:var(--ink);
   margin:0 0 1.3rem; font-feature-settings:"palt" 1;
-  display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap;
 }
+/* 番号と見出しを2列に分ける。flex + wrap だと、見出しが1行に収まらなくなった
+ * 瞬間に見出し全体が次の行へ落ち、番号だけが1行目に取り残される。
+ * grid なら見出しは2列目の中で折り返し、2行目以降も番号の右に揃う。 */
+h2{display:grid; grid-template-columns:auto 1fr; column-gap:.7rem; align-items:baseline;
+   word-break:auto-phrase}
 /* 節番号。淡い地の上に置く。黒い面に白で抜くと、そこだけ別のUIに見える。 */
 h2 .n{
-  flex:0 0 auto; font-size:.85em;
+  font-size:.85em;
   background:var(--accent-soft); color:var(--on-accent-soft);
   padding:.1em .6em; border-radius:var(--r);
   font-variant-numeric:tabular-nums;
@@ -157,14 +181,14 @@ li{margin:0 0 .5rem}
 .warn{
   background:var(--warn-soft); border-left:3px solid var(--warn);
   border-radius:0 var(--r) var(--r) 0;
-  padding:1rem 1.2rem; margin:1.6rem 0; max-width:var(--measure);
+  padding:1rem 1.2rem; margin:1.6rem 0;
 }
 .warn b{color:var(--warn)}
 .warn.danger{background:var(--danger-soft); border-left-color:var(--danger)}
 .warn.danger b{color:var(--danger)}
 
 /* ── 図 ─────────────────────────────────────────────────
- * 本文より広く出す。図が主役という設計を、幅で示す。 */
+ * 紙面の幅いっぱいに出す。SVG に width / height の属性を付けない（幅が固定される）。 */
 figure{margin:2.2rem 0; padding:0}
 figure svg{
   width:100%; height:auto; display:block;
@@ -172,7 +196,7 @@ figure svg{
 }
 figcaption{
   font-size:.85rem; line-height:1.75; color:var(--sub);
-  margin-top:.8rem; max-width:var(--measure);
+  margin-top:.8rem;
 }
 
 /* ── 図の色 ─────────────────────────────────────────────
@@ -212,7 +236,7 @@ svg .ar    {fill:var(--line-strong)}
 /* 表の幅は、列数ではなく中身に決めさせる。
  *
  * width:100% + table の min-width では、その値が列数と噛み合わない。
- * 9列の表に min-width:32rem(=512px) を置くと紙面 1152px に収まってしまい、
+ * 9列の表に min-width:32rem(=512px) を置くと当時の紙面 1152px に収まってしまい、
  * 横スクロールが出ないまま列だけが潰れる——「気圧予報グラフ（1時間刻み）」が
  * 4行に割れる、という形で出る。rem はルートの16px基準で body の 20px では
  * ないぶん、さらに小さくなる。
@@ -247,7 +271,7 @@ a{color:var(--accent); text-decoration:underline; text-underline-offset:.18em}
 
 @media (max-width:640px){
   body{font-size:18px}
-  .deck{padding:1.5rem 1.1rem 4rem}
+  .deck{padding-top:1.5rem; padding-bottom:4rem}
   h1{font-size:1.75rem}
   h2{font-size:1.15rem}
   .panel{padding:2.2rem 0 2rem}
