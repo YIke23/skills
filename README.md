@@ -31,7 +31,7 @@ claude.ai とデスクトップアプリは配列を無視してプラグイン�
 
 | プラグイン | 中身 | 配布先 |
 |---|---|---|
-| `studio` | web-image-builder, icon-builder, sns-icon-builder, eli15, meeting-deck, paas-onboarding, doc-brief | Mac + claude.ai アカウント |
+| `studio` | web-image-builder, icon-builder, sns-icon-builder, eli15, meeting-deck, paas-onboarding, doc-brief, readme-builder | Mac + claude.ai アカウント |
 | `skill-kit` | skill-prior-art, skill-inventory | Mac + claude.ai アカウント |
 | `git-flow` | create-branch, git-commit, create-pr, merge-pr, release-pr, create-issue | Mac のみ（手元の git を触るため） |
 
