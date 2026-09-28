@@ -19,7 +19,8 @@ README は「このリポジトリについての主張の集合」で、主張�
   - ディレクトリ構成に書いた、存在しないトップレベルのディレクトリ
 
 警告（exit 1）:
-  - 冒頭の概要 / コードブロック / 最終確認日 / ブランチとデプロイ先の章が無い。最終確認日が古い
+  - 冒頭の概要 / 開発状況・開発URL・本番URL / コードブロック / 最終確認日 / ブランチとデプロイ先の章が無い。
+    最終確認日が古い。セットアップが数字付きの箇条書きでない
   - デプロイ設定があるのにデプロイの記述が無い
   - docs/・documents/ にあるのに関連文書に載っていない資料
   - コードが読む環境変数があるのに、環境変数の資料へのリンクが無い
@@ -346,6 +347,14 @@ def main() -> int:
                 warns.append(f"最終確認日が {age} 日前。手順を通し直して日付を更新する")
         except ValueError:
             errs.append(f"最終確認日の日付が読めない（{m.group(2)}）")
+    head = text.split("\n## ", 1)[0]
+    missing = [k for k, pat in [("開発状況", r"開発状況|状態|status"), ("開発URL", r"開発\s*URL|dev(elopment)?\s*URL|ステージング"),
+                                ("本番URL", r"本番\s*URL|production\s*URL")] if not re.search(pat, head, re.I)]
+    if missing:
+        warns.append(f"冒頭（最初の ## より前）の箇条書きに {', '.join(missing)} が無い")
+    m_setup = re.search(r"^##\s*(セットアップ|setup|getting started)[^\n]*\n(.*?)(?=^## |\Z)", text, re.M | re.S | re.I)
+    if m_setup and not re.search(r"^\d+\.\s", m_setup.group(2), re.M):
+        warns.append("セットアップが数字付きの箇条書きになっていない。1ステップ1操作で番号を振る")
     if not re.search(r"^#+\s*.*(ブランチ|branch)", text, re.M | re.I):
         warns.append("「ブランチとデプロイ先」の章が無い。作業ブランチ・PR 先・マージで出る環境と URL を表にする")
     deploy_hint = [s for s in facts["services"] if s.startswith(("Vercel", "Netlify", "Fly", "Render", "Railway",
