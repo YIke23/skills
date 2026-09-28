@@ -21,6 +21,7 @@ README は「このリポジトリについての主張の集合」で、主張�
   - 問い合わせ先が無い / デプロイ設定があるのにデプロイの記述が無い
   - コードが読む環境変数があるのに、環境変数の専用資料へのリンクが無い
   - README に環境変数の表がある（一覧は専用資料に切り分ける）
+  - README に「やってはいけない操作」「トラブルシューティング」の本文がある（専用資料に切り分ける）
   - コードから導ける長い一覧（20行超のディレクトリツリー）
   - 地の文が上限（既定 4,000 字）を超えている
   - インラインコードに書いたパスが存在しない
@@ -339,6 +340,18 @@ def main() -> int:
                 set(facts["env"]["used_in_code"]) | {n for ns in facts["env"]["templates"].values() for n in ns}]
     if len(env_rows) >= 3:
         warns.append(f"{env_rows[0]}行目から環境変数の表がある（{len(env_rows)} 行）。一覧は専用資料に移し、README はリンクだけにする")
+    # 専用資料に切り分ける節。見出しだけ残してリンクする形は通す（本文3行以上で警告）
+    split_out = re.compile(r"やってはいけない|禁止|困ったとき|トラブル|troubleshoot|known issues|注意事項", re.I)
+    sec, body = None, 0
+    for i, line in enumerate(lines + ["## _end"], 1):
+        m = HEADING.match(line)
+        if m and len(m.group(1)) <= 2:
+            if sec and body >= 3:
+                warns.append(f"{sec[0]}行目「{sec[1]}」の本文が README にある。専用資料に切り分け、関連文書からリンクする")
+            sec = (i, m.group(2)) if split_out.search(m.group(2)) else None
+            body = 0
+        elif sec and line.strip():
+            body += 1
     for start, block in code_blocks:
         tree = sum(1 for l in block if TREE_LINE.search(l))
         if tree > 20:
