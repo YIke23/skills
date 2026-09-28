@@ -266,10 +266,13 @@ def main() -> int:
 
     # コードブロックの中のコマンド
     all_code = [(s, l) for s, block in code_blocks for l in block]
-    inline_cmds = [(0, c) for c in INLINE_CODE.findall(text)
-                   if re.match(r"^(npm|pnpm|yarn|bun|make|cp|mv|docker|docker-compose|git)\s", c.strip())]
+    # 表の中のコマンド（「よく使うコマンド」など）は手順そのものなので不適合、
+    # 地の文の中のコマンドは「〜は廃止した」のような言及がありうるので警告にする
+    CMD = re.compile(r"^(npm|pnpm|yarn|bun|make|cp|mv|docker|docker-compose|git|fastlane|bundle|eas)\s")
+    inline_cmds = [(-1 if l.lstrip().startswith("|") else 0, c)
+                   for l in lines for c in INLINE_CODE.findall(l) if CMD.match(c.strip())]
     for start, raw in all_code + inline_cmds:
-        where = f"{start}行目からのコードブロック" if start else "インラインコード"
+        where = {0: "インラインコード", -1: "表のコマンド"}.get(start, f"{start}行目からのコードブロック")
         bucket = errs if start else warns
         line = re.sub(r"^\s*[$>%#]\s+", "", raw)
         for seg in re.split(r"&&|\|\||;|\|", line):
