@@ -347,8 +347,10 @@ def main() -> int:
                 warns.append(f"最終確認日が {age} 日前。手順を通し直して日付を更新する")
         except ValueError:
             errs.append(f"最終確認日の日付が読めない（{m.group(2)}）")
-    if not CONTACT_WORDS.search(text):
-        warns.append("問い合わせ先（担当・窓口）が無い。引き継いだ人が最初に困るのはここ")
+    if not re.search(r"^#+\s*.*(ブランチ|branch)", text, re.M | re.I):
+        warns.append("ブランチ戦略の章が無い。どこで作業し、どこへ PR を出し、マージで何が起きるかを書く")
+    if not re.search(r"^#+\s*.*(デプロイ先|環境|deploy|environments)", text, re.M | re.I):
+        warns.append("デプロイ先の章が無い。環境ごとの URL と反映されるブランチを表にする")
     deploy_hint = [s for s in facts["services"] if s.startswith(("Vercel", "Netlify", "Fly", "Render", "Railway",
                    "Google App", "Firebase", "Cloudflare", "Serverless", "AWS", "Heroku", "デプロイ", "Kubernetes"))]
     if (deploy_hint or facts["ci"]) and not DEPLOY_WORDS.search(text):
@@ -368,7 +370,7 @@ def main() -> int:
                      "秘密情報なら README に置き場所を書き、リポジトリから外す相談をする")
     # 専用資料に切り分ける節。見出しだけ残してリンクする形は通す（本文3行以上で警告）
     split_out = re.compile(r"やってはいけない|禁止|困ったとき|トラブル|troubleshoot|known issues|注意事項|"
-                           r"デプロイ|deploy|外部サービス|検証端末|環境変数", re.I)
+                           r"デプロイ手順|外部サービス|検証端末|環境変数", re.I)
     sec, body = None, 0
     for i, line in enumerate(lines + ["## _end"], 1):
         m = HEADING.match(line)
@@ -379,6 +381,16 @@ def main() -> int:
             body = 0
         elif sec and line.strip():
             body += 1
+    branches = set(facts["git"].get("remote_branches", []))
+    br_heads = [i for i, l in enumerate(lines, 1) if HEADING.match(l) and re.search(r"ブランチ|デプロイ先|branch", l, re.I)]
+    for i, l in enumerate(lines, 1):
+        if not branches or not l.lstrip().startswith("|") or not any(0 < i - h <= 12 for h in br_heads):
+            continue
+        for b in re.findall(r"`([\w./-]+)`", l):
+            if "*" in b or "/" in b and b.split("/")[0] in {"feature", "fix", "hotfix", "release"} and b not in branches:
+                continue
+            if re.match(r"^[\w./-]+$", b) and b not in branches and not b.startswith(("http", "npm", "git")):
+                errs.append(f"{i}行目: ブランチ `{b}` がリモートに無い（{', '.join(sorted(branches)[:8])}）")
     dir_heads = [i for i, l in enumerate(lines, 1) if HEADING.match(l) and re.search(r"ディレクトリ|構成|structure|layout", l, re.I)]
     for start, block in code_blocks:
         if not any(0 < start - h <= 6 for h in dir_heads):

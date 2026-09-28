@@ -368,6 +368,10 @@ def scan(root: Path) -> dict:
     facts["git"] = {
         "remote": git(root, "remote", "get-url", "origin"),
         "default_branch": git(root, "symbolic-ref", "--short", "refs/remotes/origin/HEAD"),
+        # 最終更新の新しい順。ブランチ戦略の材料。長く更新の無いブランチは運用から外れている可能性がある
+        "remote_branches": [b.removeprefix("origin/") for b in git(
+            root, "for-each-ref", "--sort=-committerdate", "--format=%(refname:short)", "refs/remotes/origin").splitlines()
+            if b not in ("origin", "origin/HEAD")][:15],
         "last_commit": git(root, "log", "-1", "--format=%cs %s"),
         "top_committers_1y": git(root, "shortlog", "-sn", "--no-merges", "--since=1.year", "HEAD").splitlines()[:5],
     }
@@ -454,6 +458,7 @@ def render(f: dict) -> str:
     L += ["", "## git",
           f"- remote: {g['remote'] or 'なし'}",
           f"- 既定ブランチ: {g['default_branch'] or '不明'}",
+          f"- リモートブランチ（更新の新しい順）: {', '.join(g.get('remote_branches', [])) or 'なし'}",
           f"- 最終コミット: {g['last_commit'] or '不明'}",
           "- 直近1年のコミット数上位（問い合わせ先の候補。本人に確認してから書く）:"]
     L += [f"  - {c.strip()}" for c in g["top_committers_1y"]] or ["  - 不明"]
