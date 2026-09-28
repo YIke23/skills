@@ -27,6 +27,7 @@ README は「このリポジトリについての主張の集合」で、主張�
     python3 check_readme.py <README.md> [--repo <リポジトリ>] [--limit N]
 
 --repo を省くと README のあるディレクトリをリポジトリとみなす。
+README がリポジトリの外（下書き）にあるときは、リポジトリ直下に置く前提で相対リンクを解決する。
 """
 
 import argparse
@@ -71,7 +72,7 @@ CONTACT_WORDS = re.compile(r"担当|問い合わせ|問合せ|連絡先|窓口|�
 DEPLOY_WORDS = re.compile(r"デプロイ|リリース|本番|deploy|release|production", re.I)
 VERIFIED = re.compile(r"(最終確認日|最終更新日|最終確認|last (?:reviewed|verified|updated))\s*[:：]\s*(\d{4}-\d{2}-\d{2})", re.I)
 ENV_POINTER = re.compile(r"\.env[\w.]*\.(example|sample|template|dist)|\.envrc\.example|環境変数|environment variables", re.I)
-TREE_LINE = re.compile(r"[├└│]|^\s*[\w.-]+/\s*(#.*)?$")
+TREE_LINE = re.compile(r"[├└│]|^\s*[\w.\-\[\]|()/]+/?\s*(#.*)?$|^\s*[\w.\-\[\]|()]+(?:/[\w.\-\[\]|()]*)*\s{2,}\S")
 
 
 def github_slug(text: str) -> str:
@@ -137,7 +138,9 @@ def main() -> int:
         print(f"ERROR: README が無い: {readme}", file=sys.stderr)
         return 1
     repo = Path(a.repo).expanduser().resolve() if a.repo else readme.parent
-    base = readme.parent
+    # 下書きをリポジトリの外に置いて検査することがある。その場合、相対リンクは
+    # 「README がリポジトリ直下にある」とみなしてリポジトリ基準で解決する
+    base = readme.parent if readme.is_relative_to(repo) else repo
     raw = readme.read_text(encoding="utf-8")
     # HTML コメントは読者に見えないので検査しない。行番号がずれないよう改行だけ残す
     text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group(0).count("\n"), raw, flags=re.S)
