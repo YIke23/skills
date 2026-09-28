@@ -249,8 +249,16 @@ def scan(root: Path) -> dict:
         if p.is_file() and not any(p.samefile(q) for q in seen):
             seen.append(p)
             docs.append({"path": name, "lines": read(p).count("\n")})
-    docs_dir = root / "docs"
-    doc_files = sorted(rel(p, root) for p in docs_dir.rglob("*.md")) if docs_dir.is_dir() else []
+    doc_files = []
+    for dname in ["docs", "documents"]:
+        d = root / dname
+        if d.is_dir():
+            doc_files += sorted(rel(p, root) for p in d.rglob("*.md"))
+    # 関連文書の「内容」の材料として、各資料の最初の見出しを添える
+    facts["docs_titles"] = {}
+    for f in doc_files[:80]:
+        m = re.search(r"^#\s+(.+)$", read(root / f), re.M)
+        facts["docs_titles"][f] = m.group(1).strip() if m else ""
     facts["docs"] = docs
     facts["docs_dir_md"] = doc_files[:40]
     facts["docs_dir_md_total"] = len(doc_files)
@@ -393,8 +401,8 @@ def render(f: dict) -> str:
     for d in f["docs"]:
         L.append(f"- {d['path']}（{d['lines']} 行）")
     if f["docs_dir_md_total"]:
-        L.append(f"- docs/ 配下の .md: {f['docs_dir_md_total']} 本（先頭40本）")
-        L += [f"  - {p}" for p in f["docs_dir_md"]]
+        L.append(f"- docs 配下の資料（docs/・documents/）: {f['docs_dir_md_total']} 本（先頭40本。関連文書の材料）")
+        L += [f"  - {p} — {f['docs_titles'].get(p, '')}" for p in f["docs_dir_md"]]
     if not f["docs"] and not f["docs_dir_md_total"]:
         L.append("- なし")
     L += ["", "## 実行系"]

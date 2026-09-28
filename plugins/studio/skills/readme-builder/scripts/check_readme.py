@@ -25,6 +25,7 @@ README は「このリポジトリについての主張の集合」で、主張�
   - README に「やってはいけない操作」「トラブルシューティング」の本文がある（専用資料に切り分ける）
   - コードから導ける長い一覧（15行超のディレクトリツリー）
   - ディレクトリ構成に書いたトップレベルのディレクトリが存在しない
+  - docs/・documents/ にあるのに関連文書に載っていない資料
   - 地の文が上限（既定 2,000 字）を超えている
   - モバイルアプリなのに、検証端末へのビルドと更新の手順が無い
   - インラインコードに書いたパスが存在しない
@@ -389,6 +390,14 @@ def main() -> int:
                 continue
             if re.match(r"^[\w./-]+$", b) and b not in branches and not b.startswith(("http", "npm", "git")):
                 errs.append(f"{i}行目: ブランチ `{b}` がリモートに無い（{', '.join(sorted(branches)[:8])}）")
+    # 関連文書の列挙漏れ。役目を終えた資料（archive 等）は除く
+    listed = {t.split("#")[0].removeprefix("./") for t in LINK.findall(text)}
+    unlisted = [f for f in facts["docs_dir_md"] if f not in listed
+                and not re.search(r"(^|/)(archive|archives|old|_old|deprecated)/", f, re.I)
+                and not f.lower().endswith("/readme.md")]
+    if unlisted and facts["docs_dir_md_total"] <= 40:
+        warns.append(f"docs 配下にあるのに関連文書に載っていない資料が {len(unlisted)} 本: "
+                     + ", ".join(unlisted[:10]) + (" ほか" if len(unlisted) > 10 else ""))
     dir_heads = [i for i, l in enumerate(lines, 1) if HEADING.match(l) and re.search(r"ディレクトリ|構成|structure|layout", l, re.I)]
     for start, block in code_blocks:
         if not any(0 < start - h <= 6 for h in dir_heads):
