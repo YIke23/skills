@@ -348,9 +348,7 @@ def main() -> int:
         except ValueError:
             errs.append(f"最終確認日の日付が読めない（{m.group(2)}）")
     if not re.search(r"^#+\s*.*(ブランチ|branch)", text, re.M | re.I):
-        warns.append("ブランチ戦略の章が無い。どこで作業し、どこへ PR を出し、マージで何が起きるかを書く")
-    if not re.search(r"^#+\s*.*(デプロイ先|環境|deploy|environments)", text, re.M | re.I):
-        warns.append("デプロイ先の章が無い。環境ごとの URL と反映されるブランチを表にする")
+        warns.append("「ブランチとデプロイ先」の章が無い。作業ブランチ・PR 先・マージで出る環境と URL を表にする")
     deploy_hint = [s for s in facts["services"] if s.startswith(("Vercel", "Netlify", "Fly", "Render", "Railway",
                    "Google App", "Firebase", "Cloudflare", "Serverless", "AWS", "Heroku", "デプロイ", "Kubernetes"))]
     if (deploy_hint or facts["ci"]) and not DEPLOY_WORDS.search(text):
