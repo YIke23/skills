@@ -35,7 +35,7 @@ README は最小限の入口にする。置くのは「何か」「セットア�
 <!-- clone から「動いた」までを1回だけ通す手順。前提の版は .nvmrc / engines / .tool-versions から写す。
      変数の値は書かない。入手先は関連文書の環境変数の資料に任せる。 -->
 
-前提: {{Node.js 22 系（.nvmrc）/ Docker Desktop / ○○ の閲覧権限（担当に依頼）}}
+前提: {{Node.js 22 系（.nvmrc）/ Docker Desktop / ○○ の閲覧権限（管理者に依頼）}}
 
 ```bash
 {{git clone …（実際の origin と同じ URL）}}

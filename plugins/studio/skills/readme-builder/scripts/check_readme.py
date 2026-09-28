@@ -6,29 +6,28 @@ README は「このリポジトリについての主張の集合」で、主張�
 実際の remote と違う——どれも読者が最初の10分で踏み、書き手は気づかない。
 
 不適合（exit 2）:
-  - 秘密情報らしき文字列（API キー・秘密鍵・トークン）
+  - 秘密情報らしき文字列（API キー・秘密鍵・トークン）、環境変数の値（NAME=value。ローカル既定値も含む）
   - 書き手の手元の絶対パス（/Users/... など）
   - 雛形の埋め残し（{{...}} / YYYY-MM-DD / TODO / TBD）
   - 壊れた相対リンク・画像、README 内の見出しアンカー
-  - npm / pnpm / yarn / bun の存在しないスクリプト名、make の存在しないターゲット
+  - コードブロックと表に書いた、存在しない npm / pnpm / yarn / bun のスクリプト、make のターゲット、
+    fastlane の lane、eas build のプロファイル
   - cp / mv の元ファイルが無い（.env.example など）
   - docker compose の存在しないサービス名
   - git clone の URL が実際の origin と違う
-  - fastlane の存在しない lane、eas build の存在しないプロファイル
-  - 環境変数の値（NAME=value の形の設定行。ローカル専用の既定値も含む）
+  - ブランチとデプロイ先の表に書いた、リモートに無いブランチ名
+  - ディレクトリ構成に書いた、存在しないトップレベルのディレクトリ
 
 警告（exit 1）:
-  - 冒頭の概要が無い / セットアップのコードブロックが無い / 最終確認日が無い・古い
-  - 問い合わせ先が無い / デプロイ設定があるのにデプロイの記述が無い
-  - コードが読む環境変数があるのに、環境変数の専用資料へのリンクが無い
-  - README に環境変数の表がある（一覧は専用資料に切り分ける）
-  - README に「やってはいけない操作」「トラブルシューティング」の本文がある（専用資料に切り分ける）
-  - コードから導ける長い一覧（15行超のディレクトリツリー）
-  - ディレクトリ構成に書いたトップレベルのディレクトリが存在しない
+  - 冒頭の概要 / コードブロック / 最終確認日 / ブランチとデプロイ先の章が無い。最終確認日が古い
+  - デプロイ設定があるのにデプロイの記述が無い
   - docs/・documents/ にあるのに関連文書に載っていない資料
-  - 地の文が上限（既定 2,000 字）を超えている
-  - モバイルアプリなのに、検証端末へのビルドと更新の手順が無い
-  - インラインコードに書いたパスが存在しない
+  - コードが読む環境変数があるのに、環境変数の資料へのリンクが無い
+  - README に docs 向けの本文がある（環境変数の表、やってはいけない操作、トラブルシューティング、
+    デプロイ手順、外部サービス、検証端末）
+  - 15行を超えるディレクトリツリー、2,000 字を超える地の文
+  - モバイルアプリなのに検証端末の手掛かりが無い、署名ファイルが git に入っている
+  - 地の文のインラインコードに書いた、存在しないパスやコマンド
 
 使い方:
     python3 check_readme.py <README.md> [--repo <リポジトリ>] [--limit N]
@@ -75,10 +74,9 @@ NPM_BUILTIN = {"install", "i", "ci", "add", "remove", "uninstall", "update", "in
                "--version", "version", "help", "rebuild", "prune", "dedupe", "pack", "import",
                "store", "env", "setup", "patch", "fetch"}
 
-CONTACT_WORDS = re.compile(r"担当|問い合わせ|問合せ|連絡先|窓口|オーナー|管理者|持ち主|owner|maintainer|contact", re.I)
 DEPLOY_WORDS = re.compile(r"デプロイ|リリース|本番|deploy|release|production", re.I)
 VERIFIED = re.compile(r"(最終確認日|最終更新日|最終確認|last (?:reviewed|verified|updated))\s*[:：]\s*(\d{4}-\d{2}-\d{2})", re.I)
-# 環境変数の専用資料へのリンク。表示テキストかリンク先に env / 環境変数 を含むもの
+# 環境変数のdocs の資料へのリンク。表示テキストかリンク先に env / 環境変数 を含むもの
 ENV_DOC_LINK = re.compile(r"\[[^\]]*(?:環境変数|env)[^\]]*\]\([^)]+\)|\[[^\]]*\]\([^)]*(?:env|環境変数)[^)]*\)", re.I)
 # NAME=value の設定行。値が空・<…>・${…} のものは値を書いていないので通す
 ENV_ASSIGN = re.compile(r"^\s*(?:export\s+)?([A-Z][A-Z0-9_]{2,})=(?![\s<$]|\"\"|''|$)(\S+)\s*(?:#.*)?$")
@@ -212,7 +210,7 @@ def main() -> int:
         # JAVA_HOME のようなツールの設定や NODE_ENV=production のような条件は値の記載ではない
         if m_env and m_env.group(1) in app_env and m_env.group(1) not in ENV_IGNORE:
             errs.append(f"{i}行目: 環境変数 {m_env.group(1)} に値を書いている。値はどの文書にも書かず、"
-                        "専用資料で入手先だけ示す")
+                        "docs の資料で入手先だけ示す")
         if LOCAL_PATH.search(line):
             errs.append(f"{i}行目: 書き手の手元の絶対パスがある（{LOCAL_PATH.search(line).group(1)}）。リポジトリからの相対パスで書く")
         if FENCE.match(line):
@@ -356,18 +354,18 @@ def main() -> int:
         warns.append(f"デプロイ関連の設定があるのに（{', '.join(deploy_hint + facts['ci'])[:120]}）、デプロイ・本番の記述が無い")
     used = [k for k in facts["env"]["used_in_code"] if not k.startswith(("E2E_", "RUN_"))]
     if used and not ENV_DOC_LINK.search(text):
-        warns.append(f"コードが {len(used)} 個の環境変数を読むのに、環境変数の専用資料へのリンクが無い。"
-                     "一覧は docs/environment-variables.md などに切り分け、README からリンクする")
+        warns.append(f"コードが {len(used)} 個の環境変数を読むのに、環境変数のdocs の資料へのリンクが無い。"
+                     "一覧は docs の資料に置き、関連文書に載せる")
     env_rows = [i for i, l in enumerate(lines, 1) if ENV_TABLE_ROW.match(l) and l.split("|")[1].strip(" `") in
                 set(facts["env"]["used_in_code"]) | {n for ns in facts["env"]["templates"].values() for n in ns}]
     if len(env_rows) >= 3:
-        warns.append(f"{env_rows[0]}行目から環境変数の表がある（{len(env_rows)} 行）。一覧は専用資料に移し、README はリンクだけにする")
+        warns.append(f"{env_rows[0]}行目から環境変数の表がある（{len(env_rows)} 行）。一覧はdocs の資料に移し、README はリンクだけにする")
     if mb and not re.search(r"検証端末|実機|TestFlight|App Distribution|内部テスト|internal testing|Ad ?Hoc|DeployGate", text, re.I):
         warns.append(f"モバイルアプリ（{', '.join(mb['frameworks']) or 'ネイティブ'}）なのに、検証端末へのビルドと更新の手順が無い")
     if mb.get("signing_files_in_git"):
         warns.append(f"署名・構成ファイルが git に入っている: {', '.join(mb['signing_files_in_git'][:5])}。"
                      "秘密情報なら README に置き場所を書き、リポジトリから外す相談をする")
-    # 専用資料に切り分ける節。見出しだけ残してリンクする形は通す（本文3行以上で警告）
+    # docs の資料に切り分ける節。見出しだけ残してリンクする形は通す（本文3行以上で警告）
     split_out = re.compile(r"やってはいけない|禁止|困ったとき|トラブル|troubleshoot|known issues|注意事項|"
                            r"デプロイ手順|外部サービス|検証端末|環境変数", re.I)
     sec, body = None, 0
@@ -375,7 +373,7 @@ def main() -> int:
         m = HEADING.match(line)
         if m and len(m.group(1)) <= 2:
             if sec and body >= 3:
-                warns.append(f"{sec[0]}行目「{sec[1]}」の本文が README にある。専用資料に切り分け、関連文書からリンクする")
+                warns.append(f"{sec[0]}行目「{sec[1]}」の本文が README にある。docs の資料に切り分け、関連文書からリンクする")
             sec = (i, m.group(2)) if split_out.search(m.group(2)) else None
             body = 0
         elif sec and line.strip():

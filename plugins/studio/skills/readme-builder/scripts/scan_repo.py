@@ -162,6 +162,31 @@ def compose_services(text: str) -> list[str]:
     return re.findall(r"^  ([A-Za-z0-9_.-]+):", m.group(1), re.M)
 
 
+FRAMEWORK_HINTS = [
+    ("next", "Next.js"), ("nuxt", "Nuxt"), ("@sveltejs/kit", "SvelteKit"), ("astro", "Astro"),
+    ("@remix-run/react", "Remix"), ("vue", "Vue"), ("react", "React"), ("svelte", "Svelte"),
+    ("@angular/core", "Angular"), ("express", "Express"), ("@nestjs/core", "NestJS"), ("hono", "Hono"),
+    ("fastify", "Fastify"), ("laravel/framework", "Laravel"), ("symfony/framework-bundle", "Symfony"),
+    ("django", "Django"), ("fastapi", "FastAPI"), ("flask", "Flask"), ("rails", "Rails"),
+    ("typescript", "TypeScript"), ("tailwindcss", "Tailwind CSS"), ("vite", "Vite"),
+]
+
+
+def detect_frameworks(root: Path, deps: dict) -> list[str]:
+    """依存と設定ファイルから言語・フレームワークを推す。README のディレクトリ構成に添える材料。"""
+    names = {d.lower() for d in deps}
+    out = []
+    for key, label in FRAMEWORK_HINTS:
+        if key in names and label not in out:
+            out.append(label)
+    for f, label in [("go.mod", "Go"), ("Cargo.toml", "Rust"), ("pubspec.yaml", "Flutter / Dart"),
+                     ("Gemfile", "Ruby"), ("composer.json", "PHP"), ("pyproject.toml", "Python"),
+                     ("requirements.txt", "Python")]:
+        if (root / f).is_file() and label not in out:
+            out.append(label)
+    return out
+
+
 def mobile(root: Path, deps: dict) -> dict:
     """モバイルアプリの手掛かり。検証端末へのビルド・更新の章を書くための材料。"""
     m: dict = {"frameworks": [], "eas_build_profiles": [], "fastlane_lanes": [],
@@ -385,11 +410,18 @@ def scan(root: Path) -> dict:
     }
     # トップレベルのディレクトリ（git 管理のファイルがあるものだけ）。README のディレクトリ構成の材料
     top: dict[str, int] = {}
+    exts: dict[str, dict[str, int]] = {}
     for f in git(root, "-c", "core.quotepath=off", "ls-files").splitlines():
         if "/" in f:
             d = f.split("/", 1)[0]
             top[d] = top.get(d, 0) + 1
-    facts["top_level_dirs"] = sorted(top.items())
+            ext = Path(f).suffix.lower()
+            if ext:
+                exts.setdefault(d, {})[ext] = exts.setdefault(d, {}).get(ext, 0) + 1
+    # 各ディレクトリで多い拡張子の上位2つ。ディレクトリ構成に言語を添える材料
+    facts["top_level_dirs"] = [(d, n, [e for e, _ in sorted(exts.get(d, {}).items(), key=lambda x: -x[1])[:2]])
+                               for d, n in sorted(top.items())]
+    facts["frameworks"] = detect_frameworks(root, deps)
     lic = [n for n in ["LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING"] if (root / n).is_file()]
     facts["license"] = lic
     return facts
@@ -470,8 +502,9 @@ def render(f: dict) -> str:
           f"- 最終コミット: {g['last_commit'] or '不明'}",
           "- 直近1年のコミット数上位（問い合わせ先の候補。本人に確認してから書く）:"]
     L += [f"  - {c.strip()}" for c in g["top_committers_1y"]] or ["  - 不明"]
-    L += ["", "## トップレベルのディレクトリ（git 管理のファイル数。README のディレクトリ構成の材料）"]
-    L += [f"- {d}/（{n}）" for d, n in f.get("top_level_dirs", [])] or ["- なし"]
+    L += ["", "## トップレベルのディレクトリ（README のディレクトリ構成の材料）"]
+    L += [f"- {d}/（{n} ファイル、主な拡張子: {', '.join(e) or 'なし'}）" for d, n, e in f.get("top_level_dirs", [])] or ["- なし"]
+    L.append(f"- 依存と設定から推した言語・フレームワーク: {', '.join(f.get('frameworks', [])) or '不明'}")
     L += ["", f"## ライセンス: {', '.join(f['license']) or 'ファイルなし'}"]
     return "\n".join(L)
 
