@@ -1,8 +1,8 @@
-# スキル運用ガイド（2026-09-13）
+# スキル運用ガイド（2026-09-13 / 2026-09-28 更新）
 
 会社Mac でスキルを書き、個人Mac まで届けるまでの手順。読者は YIke 本人と、このプロジェクトを引き継ぐ Claude。
 
-**0章と1章は初回に通読する。2〜4章は必要になったときに引く。** 経緯や設計の背景は `skill-distribution-pipeline.md` にある。
+**0章と1章は初回に通読する。2〜6章は必要になったときに引く。** 経緯や設計の背景は `skill-distribution-pipeline.md` にある。
 
 ## 0. 作業は会社Mac の Claude Code で通す
 
@@ -100,17 +100,126 @@ Cowork を使うのは次の3つに限る。
 
 ブランチ名は `add-` ではなく `fix-<name>` や `update-<name>` を使う。PR を見返したときに、新規追加と更新が名前で分かれる。
 
-## 4. 完成したスキルを両方の Mac に届ける → plugin update と再起動
+## 4. 完成したスキルを届ける → Mac は plugin update、アカウントは「更新」
 
-マージしたあと、各 Mac で受け取る。
+### 両方の Mac
 
-1. `/plugin marketplace update` — 一覧を取り直す
-2. `/plugin update` — 実体を取り込む
-3. **Claude Code を再起動する**
+マージしたあと、各 Mac の Claude Code で受け取る。
 
-`marketplace update` だけでは反映されない。手順2と3まで通して初めて新しいスキルが使える。
+```bash
+claude plugin marketplace update yike-skills
+claude plugin update studio@yike-skills
+claude plugin update skill-kit@yike-skills
+claude plugin update git-flow@yike-skills
+```
+
+続けて **Claude Code を再起動する。**
+
+`marketplace update` だけでは反映されない。marketplace の複製が新しくなるだけで、
+入っているプラグインの版は切り替わらない。各プラグインの `update` と再起動まで通して初めて新しいスキルが使える。
+
+反映できたかは `plugin list` の SHA ではなく、**再起動後の新規セッションで `/studio:<skill>` が
+候補に出るか**で確かめる。`plugin validate` も `plugin details` も名前空間の問題は素通りするので、
+この2つを根拠にしない。
 
 個人Mac ではこれだけ。個人Mac の `~/.claude/skills` は常に空で、何も書かない。
+
+**marketplace 名やプラグイン名を変えたときだけは `plugin update` で追従しない。**
+登録キーが古い名前のままなので、一度消して入れ直す。
+
+```bash
+claude plugin marketplace remove <古い marketplace 名>
+claude plugin marketplace add git@github.com:YIke23/skills.git
+claude plugin install studio@yike-skills
+claude plugin install skill-kit@yike-skills
+claude plugin install git-flow@yike-skills
+```
+
+### claude.ai アカウント（会社・個人の2つ）
+
+アカウント側は GitHub リポジトリを marketplace として見ている。**ビルドもアップロードも要らない。**
+Customize > Skills でプラグインを開き、**「更新」を押す**だけ。会社と個人で1回ずつ、計2回。
+配るのは `studio` と `skill-kit` で、`git-flow` は上げない（手元の git を触るので使い道がない）。
+
+反映できたかは、そのプラグインの「スキル」タブの本数が `plugins/<plugin>/skills/` の
+フォルダ数と一致するかで確かめる。合わないときは配布単位の切り方を疑う（→ 末尾の「studio に git 系が混ざっていた件」）。
+
+`.plugin` を作って手で上げる経路（`make build` と `scripts/build.py`）は 2026-09-15 に廃止した。
+GitHub 連携で同じことができるうえ、上げ忘れると**アカウントだけ古い**という気づきにくい壊れ方をするため。
+
+## 5. 新しい Mac に入れる → marketplace を SSH で登録する
+
+各マシンで1回だけ。
+
+```bash
+claude plugin marketplace add git@github.com:YIke23/skills.git
+claude plugin install studio@yike-skills
+claude plugin install skill-kit@yike-skills
+claude plugin install git-flow@yike-skills
+```
+
+**SSH リモートを使うこと。** HTTPS だと最初の登録は通るのに、バックグラウンドの
+自動更新だけが無言で失敗する。HTTPS を使うなら先に `gh auth setup-git` を実行しておく。
+
+取得に失敗したとき既存の複製を捨てないよう、`~/.claude/settings.json` の `env` に
+`CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE` を足しておく（有効にする）。
+
+## 6. リポジトリの決まりごと
+
+### marketplace.json には name と source だけを書く
+
+**スキルの所属はフォルダ構造で決まる。** `plugins/<plugin>/skills/` に置いたものが、
+そのプラグインとして配られる。`marketplace.json` に `skills` 配列は書かない。
+CLI は配列で絞り込むが、claude.ai とデスクトップアプリは配列を無視してプラグインルート直下の
+`skills/` を総なめするので、配列を書くと実装ごとに生える本数が食い違う。
+`template/` `scripts/` `docs/` はどの `source` にも入らないので、配布物には含まれない。
+
+プラグイン項目に `version` も書かない。書くとリリースごとに上げない限り更新が止まる。
+省略していればコミットを追って自動更新される。
+
+リポジトリ名は `skills`、marketplace 名は `yike-skills` で、意図的に別にしてある。
+プラグイン ID が `studio@yike-skills` の形になるのはこのため。
+anthropics/skills も同じく `anthropic-agent-skills` という別名を持つ。
+
+### main は保護されている
+
+`main` へは直接 push できない。ルールセット「main: PR と CI 通過を必須にする」による強制で、
+管理者バイパスは付けていないので自分自身も例外ではない。
+
+| ルール | 意味 |
+|---|---|
+| `pull_request` | PR 経由でしか変更できない（承認者数は 0 なので一人で回せる） |
+| `required_status_checks` | CI の `check` が緑であること。ブランチが最新の main に追いついていること |
+| `non_fast_forward` | force push で履歴を壊せない |
+| `deletion` | main を消せない |
+
+直接 push すると次のように弾かれる。
+
+```
+remote: - Changes must be made through a pull request.
+remote: - Required status check "check" is expected.
+ ! [remote rejected] main -> main
+```
+
+事故対応などでどうしても直接 push が要るときは、GitHub の **Settings > Rules > Rulesets** から
+該当ルールセットを開き、Enforcement status を Disabled にする。作業が終わったら Active に戻す。
+**戻し忘れないこと。**
+
+CI の `check` は `make check` を走らせる。見るのは2つ。**スキル単体の形式**として、SKILL.md の
+`name` とフォルダ名の一致、`description` の有無と長さ（1536 字を超えると切り捨てられ、意図した
+場面で呼ばれなくなる）。**配布の構成**として、`marketplace.json` と `plugins/` の対応、
+`plugin.json` との description の一致、リポジトリ直下の `skills/` や `skills` 配列が復活していないこと。
+
+### 入れていないもの
+
+`docx` / `pptx` / `xlsx` / `pdf` / `skill-creator` は Anthropic の Proprietary ライセンス。
+リポジトリには置かない。claude.ai アカウント側で有効にしたまま使う。
+
+### create-branch が一覧に出ないのは正常
+
+`plugins/git-flow/skills/create-branch/SKILL.md` には `disable-model-invocation: true` が付いている。
+モデルが自動で選ぶ一覧には出ず、`/git-flow:create-branch` と明示的に叩いたときだけ動く。
+配布の失敗ではない。
 
 ## 用語
 
@@ -136,5 +245,6 @@ Cowork を使うのは次の3つに限る。
 経緯と、2 回外した診断の記録は `skill-distribution-pipeline.md` の
 「プラグインの二重登録」にある。
 
-再発を疑うときは、アカウントのプラグイン画面で「スキル」タブの本数を見る。
-`studio` なら 7 本。CLI 側は `claude plugin details studio@yike-skills` で確かめる。
+再発を疑うときは、アカウントのプラグイン画面で「スキル」タブの本数が
+`plugins/<plugin>/skills/` のフォルダ数と合うかを見る。合わなければ、`marketplace.json` の
+`source` がプラグインのサブディレクトリを指しているか確認する。
