@@ -14,11 +14,13 @@ README は「このリポジトリについての主張の集合」で、主張�
   - cp / mv の元ファイルが無い（.env.example など）
   - docker compose の存在しないサービス名
   - git clone の URL が実際の origin と違う
+  - 環境変数の値（NAME=value の形の設定行。ローカル専用の既定値も含む）
 
 警告（exit 1）:
   - 冒頭の概要が無い / セットアップのコードブロックが無い / 最終確認日が無い・古い
   - 問い合わせ先が無い / デプロイ設定があるのにデプロイの記述が無い
-  - コードが読む環境変数が README にも雛形への案内にも無い
+  - コードが読む環境変数があるのに、環境変数の専用資料へのリンクが無い
+  - README に環境変数の表がある（一覧は専用資料に切り分ける）
   - コードから導ける長い一覧（20行超のディレクトリツリー）
   - 地の文が上限（既定 4,000 字）を超えている
   - インラインコードに書いたパスが存在しない
@@ -39,7 +41,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from scan_repo import compose_services, makefile_targets, scan  # noqa: E402
+from scan_repo import ENV_IGNORE, compose_services, makefile_targets, scan  # noqa: E402
 
 SECRET_PATTERNS = [
     (re.compile(r"sk_live_[0-9A-Za-z]{10,}"), "Stripe の本番キー"),
@@ -71,7 +73,11 @@ NPM_BUILTIN = {"install", "i", "ci", "add", "remove", "uninstall", "update", "in
 CONTACT_WORDS = re.compile(r"担当|問い合わせ|問合せ|連絡先|窓口|オーナー|管理者|持ち主|owner|maintainer|contact", re.I)
 DEPLOY_WORDS = re.compile(r"デプロイ|リリース|本番|deploy|release|production", re.I)
 VERIFIED = re.compile(r"(最終確認日|最終更新日|最終確認|last (?:reviewed|verified|updated))\s*[:：]\s*(\d{4}-\d{2}-\d{2})", re.I)
-ENV_POINTER = re.compile(r"\.env[\w.]*\.(example|sample|template|dist)|\.envrc\.example|環境変数|environment variables", re.I)
+# 環境変数の専用資料へのリンク。表示テキストかリンク先に env / 環境変数 を含むもの
+ENV_DOC_LINK = re.compile(r"\[[^\]]*(?:環境変数|env)[^\]]*\]\([^)]+\)|\[[^\]]*\]\([^)]*(?:env|環境変数)[^)]*\)", re.I)
+# NAME=value の設定行。値が空・<…>・${…} のものは値を書いていないので通す
+ENV_ASSIGN = re.compile(r"^\s*(?:export\s+)?([A-Z][A-Z0-9_]{2,})=(?![\s<$]|\"\"|''|$)(\S+)\s*(?:#.*)?$")
+ENV_TABLE_ROW = re.compile(r"^\s*\|\s*`?[A-Z][A-Z0-9_]{2,}`?\s*\|")
 TREE_LINE = re.compile(r"[├└│]|^\s*[\w.\-\[\]|()/]+/?\s*(#.*)?$|^\s*[\w.\-\[\]|()]+(?:/[\w.\-\[\]|()]*)*\s{2,}\S")
 
 
@@ -191,6 +197,11 @@ def main() -> int:
             if pat.search(line):
                 errs.append(f"{i}行目: {label}らしき文字列がある。値ではなく置き場所を書く")
                 break
+        m_env = ENV_ASSIGN.match(line) or next(
+            (ENV_ASSIGN.match(c) for c in INLINE_CODE.findall(line) if ENV_ASSIGN.match(c)), None)
+        if m_env and m_env.group(1) not in ENV_IGNORE:  # NODE_ENV=production のような実行環境の条件は値ではない
+            errs.append(f"{i}行目: 環境変数 {m_env.group(1)} に値を書いている。値はどの文書にも書かず、"
+                        "専用資料で入手先だけ示す")
         if LOCAL_PATH.search(line):
             errs.append(f"{i}行目: 書き手の手元の絶対パスがある（{LOCAL_PATH.search(line).group(1)}）。リポジトリからの相対パスで書く")
         if FENCE.match(line):
@@ -321,11 +332,13 @@ def main() -> int:
     if (deploy_hint or facts["ci"]) and not DEPLOY_WORDS.search(text):
         warns.append(f"デプロイ関連の設定があるのに（{', '.join(deploy_hint + facts['ci'])[:120]}）、デプロイ・本番の記述が無い")
     used = [k for k in facts["env"]["used_in_code"] if not k.startswith(("E2E_", "RUN_"))]
-    if used and not ENV_POINTER.search(text):
-        missing = [k for k in used if k not in text]
-        if missing:
-            head = ", ".join(missing[:15]) + (f" ほか {len(missing) - 15} 個" if len(missing) > 15 else "")
-            warns.append(f"コードが読む環境変数が README に無く、雛形や一覧への案内も無い: {head}")
+    if used and not ENV_DOC_LINK.search(text):
+        warns.append(f"コードが {len(used)} 個の環境変数を読むのに、環境変数の専用資料へのリンクが無い。"
+                     "一覧は docs/environment-variables.md などに切り分け、README からリンクする")
+    env_rows = [i for i, l in enumerate(lines, 1) if ENV_TABLE_ROW.match(l) and l.split("|")[1].strip(" `") in
+                set(facts["env"]["used_in_code"]) | {n for ns in facts["env"]["templates"].values() for n in ns}]
+    if len(env_rows) >= 3:
+        warns.append(f"{env_rows[0]}行目から環境変数の表がある（{len(env_rows)} 行）。一覧は専用資料に移し、README はリンクだけにする")
     for start, block in code_blocks:
         tree = sum(1 for l in block if TREE_LINE.search(l))
         if tree > 20:
