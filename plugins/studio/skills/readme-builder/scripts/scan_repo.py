@@ -12,6 +12,8 @@ README に書くべき事実のうち、コードや設定ファイルから確�
   - 環境変数（コードが読んでいる名前と、.env.example 類に載っている名前の突き合わせ）
   - 外部サービスの手掛かり（依存パッケージ名と設定ファイル）
   - CI とデプロイの設定ファイル
+  - モバイルアプリの手掛かり（Expo / React Native / Flutter / Capacitor / ネイティブ、
+    EAS のビルドプロファイル、fastlane の lane、版番号の置き場所、署名ファイルが git に入っていないか）
   - git の remote と、直近1年のコミット数上位（問い合わせ先の候補）
 
 **.env 本体は開かない。** 開くのは名前に example / sample / template / dist を含む雛形だけ。
@@ -160,6 +162,80 @@ def compose_services(text: str) -> list[str]:
     return re.findall(r"^  ([A-Za-z0-9_.-]+):", m.group(1), re.M)
 
 
+def mobile(root: Path, deps: dict) -> dict:
+    """モバイルアプリの手掛かり。検証端末へのビルド・更新の章を書くための材料。"""
+    m: dict = {"frameworks": [], "eas_build_profiles": [], "fastlane_lanes": [],
+               "version_sources": [], "distribution_hints": [], "signing_files_in_git": []}
+    dep_names = {d.lower() for d in deps}
+    appjson = root / "app.json"
+    if "expo" in dep_names or (root / "eas.json").is_file() or \
+            (appjson.is_file() and '"expo"' in read(appjson)) or any(root.glob("app.config.*")):
+        m["frameworks"].append("Expo")
+    elif "react-native" in dep_names:
+        m["frameworks"].append("React Native")
+    if (root / "pubspec.yaml").is_file():
+        m["frameworks"].append("Flutter")
+        v = re.search(r"^version:\s*(\S+)", read(root / "pubspec.yaml"), re.M)
+        if v:
+            m["version_sources"].append(f"pubspec.yaml version: {v.group(1)}")
+    if "@capacitor/core" in dep_names or any(root.glob("capacitor.config.*")):
+        m["frameworks"].append("Capacitor")
+    xcodeproj = sorted(p for p in list(root.glob("*.xcodeproj")) + list(root.glob("ios/**/*.xcodeproj"))
+                       if "Pods" not in p.parts and "DerivedData" not in p.parts)
+    gradle = [p for p in [root / "android/app/build.gradle", root / "android/app/build.gradle.kts",
+                          root / "app/build.gradle", root / "app/build.gradle.kts"] if p.is_file()]
+    if xcodeproj and not m["frameworks"]:
+        m["frameworks"].append("ネイティブ iOS")
+    if gradle and not m["frameworks"]:
+        m["frameworks"].append("ネイティブ Android")
+    if not (m["frameworks"] or xcodeproj or gradle):
+        return {}
+
+    eas = root / "eas.json"
+    if eas.is_file():
+        try:
+            m["eas_build_profiles"] = list(json.loads(read(eas)).get("build", {}).keys())
+        except json.JSONDecodeError:
+            pass
+        m["distribution_hints"].append("EAS（eas.json）")
+    for ff in [root / "fastlane/Fastfile", root / "ios/fastlane/Fastfile", root / "android/fastlane/Fastfile"]:
+        if ff.is_file():
+            t = read(ff)
+            lanes = re.findall(r"^\s*(?:private_)?lane\s+:(\w+)", t, re.M)
+            m["fastlane_lanes"] += [f"{rel(ff, root)}: {l}" for l in lanes]
+            for key, label in [("pilot", "TestFlight（fastlane pilot）"), ("upload_to_testflight", "TestFlight（fastlane）"),
+                               ("firebase_app_distribution", "Firebase App Distribution（fastlane）"),
+                               ("upload_to_play_store", "Google Play（fastlane supply）"), ("supply", "Google Play（fastlane supply）"),
+                               ("match", "証明書を match で管理")]:
+                if key in t and label not in m["distribution_hints"]:
+                    m["distribution_hints"].append(label)
+    for g in gradle:
+        t = read(g)
+        for key in ["versionCode", "versionName"]:
+            v = re.search(rf"{key}\s*=?\s*([\"'\w.]+)", t)
+            if v:
+                m["version_sources"].append(f"{rel(g, root)} {key}: {v.group(1)}")
+        if "appdistribution" in t.lower():
+            m["distribution_hints"].append("Firebase App Distribution（Gradle）")
+    for x in xcodeproj[:1]:
+        pbx = x / "project.pbxproj"
+        t = read(pbx)
+        for key in ["MARKETING_VERSION", "CURRENT_PROJECT_VERSION"]:
+            v = re.search(rf"{key} = ([^;]+);", t)
+            if v:
+                m["version_sources"].append(f"{rel(pbx, root)} {key}: {v.group(1)}")
+    if appjson.is_file():
+        t = read(appjson)
+        for key in ["version", "buildNumber", "versionCode"]:
+            v = re.search(rf'"{key}"\s*:\s*("?[\w.]+"?)', t)
+            if v:
+                m["version_sources"].append(f"app.json {key}: {v.group(1)}")
+    tracked = git(root, "ls-files").splitlines()
+    m["signing_files_in_git"] = [f for f in tracked if re.search(
+        r"\.(jks|keystore|p12|p8|mobileprovision|cer)$|google-services\.json$|GoogleService-Info\.plist$", f, re.I)]
+    return m
+
+
 def scan(root: Path) -> dict:
     facts: dict = {"repo": str(root)}
 
@@ -286,6 +362,7 @@ def scan(root: Path) -> dict:
             services.setdefault(svc, []).append(f"設定: {cfg}")
     facts["services"] = services
     facts["ci"] = sorted(ci)
+    facts["mobile"] = mobile(root, deps)
 
     # git
     facts["git"] = {
@@ -353,6 +430,19 @@ def render(f: dict) -> str:
     if not f["services"]:
         L.append("- なし")
     L += ["", "## CI"] + ([f"- {c}" for c in f["ci"]] or ["- なし"])
+    mb = f.get("mobile") or {}
+    if mb:
+        L += ["", "## モバイルアプリ（検証端末へのビルドと更新の章が要る）",
+              f"- 構成: {', '.join(mb['frameworks']) or '不明'}"]
+        if mb["eas_build_profiles"]:
+            L.append(f"- EAS のビルドプロファイル: {', '.join(mb['eas_build_profiles'])}")
+        if mb["fastlane_lanes"]:
+            L.append(f"- fastlane の lane: {', '.join(mb['fastlane_lanes'])}")
+        L.append(f"- 配布経路の手掛かり: {', '.join(mb['distribution_hints']) or 'なし（手動配布か。ユーザーに確かめる）'}")
+        L += ["- 版番号の置き場所:"] + ([f"  - {v}" for v in mb["version_sources"]] or ["  - 見つからない"])
+        if mb["signing_files_in_git"]:
+            L.append(f"- **署名・構成ファイルが git に入っている**: {', '.join(mb['signing_files_in_git'])}"
+                     "（秘密情報なら履歴から除く相談が要る。google-services.json 等は方針次第）")
     g = f["git"]
     L += ["", "## git",
           f"- remote: {g['remote'] or 'なし'}",

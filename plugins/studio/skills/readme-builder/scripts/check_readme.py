@@ -14,6 +14,7 @@ README は「このリポジトリについての主張の集合」で、主張�
   - cp / mv の元ファイルが無い（.env.example など）
   - docker compose の存在しないサービス名
   - git clone の URL が実際の origin と違う
+  - fastlane の存在しない lane、eas build の存在しないプロファイル
   - 環境変数の値（NAME=value の形の設定行。ローカル専用の既定値も含む）
 
 警告（exit 1）:
@@ -24,6 +25,7 @@ README は「このリポジトリについての主張の集合」で、主張�
   - README に「やってはいけない操作」「トラブルシューティング」の本文がある（専用資料に切り分ける）
   - コードから導ける長い一覧（20行超のディレクトリツリー）
   - 地の文が上限（既定 4,000 字）を超えている
+  - モバイルアプリなのに、検証端末へのビルドと更新の手順が無い
   - インラインコードに書いたパスが存在しない
 
 使い方:
@@ -164,6 +166,10 @@ def main() -> int:
     for svcs in facts["run"].get("compose_services", {}).values():
         services |= set(svcs)
     remote = facts["git"]["remote"]
+    app_env = set(facts["env"]["used_in_code"]) | {n for ns in facts["env"]["templates"].values() for n in ns}
+    mb = facts.get("mobile") or {}
+    lanes = {l.split(": ")[-1] for l in mb.get("fastlane_lanes", [])}
+    eas_profiles = set(mb.get("eas_build_profiles", []))
     try:
         tracked = subprocess.run(["git", "-C", str(repo), "ls-files"], capture_output=True,
                                  text=True, timeout=20).stdout.splitlines()
@@ -200,7 +206,9 @@ def main() -> int:
                 break
         m_env = ENV_ASSIGN.match(line) or next(
             (ENV_ASSIGN.match(c) for c in INLINE_CODE.findall(line) if ENV_ASSIGN.match(c)), None)
-        if m_env and m_env.group(1) not in ENV_IGNORE:  # NODE_ENV=production のような実行環境の条件は値ではない
+        # アプリが読む変数（コードか雛形に出てくるもの）だけを対象にする。
+        # JAVA_HOME のようなツールの設定や NODE_ENV=production のような条件は値の記載ではない
+        if m_env and m_env.group(1) in app_env and m_env.group(1) not in ENV_IGNORE:
             errs.append(f"{i}行目: 環境変数 {m_env.group(1)} に値を書いている。値はどの文書にも書かず、"
                         "専用資料で入手先だけ示す")
         if LOCAL_PATH.search(line):
@@ -306,6 +314,15 @@ def main() -> int:
                     rest = [x for x in ws[1:] if not x.startswith("-")]
                     if rest and rest[0] not in services:
                         bucket.append(f"{where}: `{seg.strip()}` — compose にサービス {rest[0]} が無い（{', '.join(sorted(services))}）")
+            fl = w[2:] if w[:2] == ["bundle", "exec"] else w
+            if lanes and fl and fl[0] == "fastlane" and len(fl) >= 2:
+                lane = fl[2] if len(fl) >= 3 and fl[1] in {"ios", "android"} else fl[1]
+                if not lane.startswith("-") and lane not in lanes:
+                    bucket.append(f"{where}: `{seg.strip()}` — Fastfile に lane `{lane}` が無い（{', '.join(sorted(lanes))}）")
+            if eas_profiles and w[:2] == ["eas", "build"] and "--profile" in w:
+                k = w.index("--profile")
+                if k + 1 < len(w) and w[k + 1] not in eas_profiles:
+                    bucket.append(f"{where}: `{seg.strip()}` — eas.json にビルドプロファイル `{w[k + 1]}` が無い（{', '.join(sorted(eas_profiles))}）")
             if w[0] == "git" and len(w) >= 3 and w[1] == "clone" and remote:
                 url = next((x for x in w[2:] if not x.startswith("-")), "")
                 if url and norm_remote(url) != norm_remote(remote):
@@ -340,6 +357,11 @@ def main() -> int:
                 set(facts["env"]["used_in_code"]) | {n for ns in facts["env"]["templates"].values() for n in ns}]
     if len(env_rows) >= 3:
         warns.append(f"{env_rows[0]}行目から環境変数の表がある（{len(env_rows)} 行）。一覧は専用資料に移し、README はリンクだけにする")
+    if mb and not re.search(r"検証端末|実機|TestFlight|App Distribution|内部テスト|internal testing|Ad ?Hoc|DeployGate", text, re.I):
+        warns.append(f"モバイルアプリ（{', '.join(mb['frameworks']) or 'ネイティブ'}）なのに、検証端末へのビルドと更新の手順が無い")
+    if mb.get("signing_files_in_git"):
+        warns.append(f"署名・構成ファイルが git に入っている: {', '.join(mb['signing_files_in_git'][:5])}。"
+                     "秘密情報なら README に置き場所を書き、リポジトリから外す相談をする")
     # 専用資料に切り分ける節。見出しだけ残してリンクする形は通す（本文3行以上で警告）
     split_out = re.compile(r"やってはいけない|禁止|困ったとき|トラブル|troubleshoot|known issues|注意事項", re.I)
     sec, body = None, 0
