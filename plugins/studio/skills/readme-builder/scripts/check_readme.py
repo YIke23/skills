@@ -23,8 +23,9 @@ README は「このリポジトリについての主張の集合」で、主張�
   - コードが読む環境変数があるのに、環境変数の専用資料へのリンクが無い
   - README に環境変数の表がある（一覧は専用資料に切り分ける）
   - README に「やってはいけない操作」「トラブルシューティング」の本文がある（専用資料に切り分ける）
-  - コードから導ける長い一覧（20行超のディレクトリツリー）
-  - 地の文が上限（既定 4,000 字）を超えている
+  - コードから導ける長い一覧（15行超のディレクトリツリー）
+  - ディレクトリ構成に書いたトップレベルのディレクトリが存在しない
+  - 地の文が上限（既定 2,000 字）を超えている
   - モバイルアプリなのに、検証端末へのビルドと更新の手順が無い
   - インラインコードに書いたパスが存在しない
 
@@ -138,7 +139,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("readme")
     ap.add_argument("--repo")
-    ap.add_argument("--limit", type=int, default=4000)
+    ap.add_argument("--limit", type=int, default=2000)
     ap.add_argument("--stale-days", type=int, default=180)
     a = ap.parse_args()
 
@@ -171,7 +172,7 @@ def main() -> int:
     lanes = {l.split(": ")[-1] for l in mb.get("fastlane_lanes", [])}
     eas_profiles = set(mb.get("eas_build_profiles", []))
     try:
-        tracked = subprocess.run(["git", "-C", str(repo), "ls-files"], capture_output=True,
+        tracked = subprocess.run(["git", "-C", str(repo), "-c", "core.quotepath=off", "ls-files"], capture_output=True,
                                  text=True, timeout=20).stdout.splitlines()
     except (OSError, subprocess.TimeoutExpired):
         tracked = []
@@ -363,7 +364,8 @@ def main() -> int:
         warns.append(f"署名・構成ファイルが git に入っている: {', '.join(mb['signing_files_in_git'][:5])}。"
                      "秘密情報なら README に置き場所を書き、リポジトリから外す相談をする")
     # 専用資料に切り分ける節。見出しだけ残してリンクする形は通す（本文3行以上で警告）
-    split_out = re.compile(r"やってはいけない|禁止|困ったとき|トラブル|troubleshoot|known issues|注意事項", re.I)
+    split_out = re.compile(r"やってはいけない|禁止|困ったとき|トラブル|troubleshoot|known issues|注意事項|"
+                           r"デプロイ|deploy|外部サービス|検証端末|環境変数", re.I)
     sec, body = None, 0
     for i, line in enumerate(lines + ["## _end"], 1):
         m = HEADING.match(line)
@@ -374,10 +376,18 @@ def main() -> int:
             body = 0
         elif sec and line.strip():
             body += 1
+    dir_heads = [i for i, l in enumerate(lines, 1) if HEADING.match(l) and re.search(r"ディレクトリ|構成|structure|layout", l, re.I)]
+    for start, block in code_blocks:
+        if not any(0 < start - h <= 6 for h in dir_heads):
+            continue
+        for l in block:
+            m = re.match(r"^([\w.\-]+)/", l)
+            if m and not (repo / m.group(1)).exists():
+                errs.append(f"{start}行目からのディレクトリ構成: {m.group(1)}/ がリポジトリに無い")
     for start, block in code_blocks:
         tree = sum(1 for l in block if TREE_LINE.search(l))
-        if tree > 20:
-            warns.append(f"{start}行目: {tree} 行のディレクトリツリー。コードを見れば分かる一覧は古びる。入口になる数か所だけに絞る")
+        if tree > 15:
+            warns.append(f"{start}行目: {tree} 行のディレクトリツリー。コードを見れば分かる一覧は古びる。トップレベルだけ、1行1役割・15行以内にする")
     if prose > a.limit:
         warns.append(f"地の文が {prose:,} 字（上限 {a.limit:,}）。詳細は docs/ に移して README からリンクする")
 

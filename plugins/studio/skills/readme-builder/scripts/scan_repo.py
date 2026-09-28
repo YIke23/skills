@@ -230,7 +230,7 @@ def mobile(root: Path, deps: dict) -> dict:
             v = re.search(rf'"{key}"\s*:\s*("?[\w.]+"?)', t)
             if v:
                 m["version_sources"].append(f"app.json {key}: {v.group(1)}")
-    tracked = git(root, "ls-files").splitlines()
+    tracked = git(root, "-c", "core.quotepath=off", "ls-files").splitlines()
     m["signing_files_in_git"] = [f for f in tracked if re.search(
         r"\.(jks|keystore|p12|p8|mobileprovision|cer)$|google-services\.json$|GoogleService-Info\.plist$", f, re.I)]
     return m
@@ -371,6 +371,13 @@ def scan(root: Path) -> dict:
         "last_commit": git(root, "log", "-1", "--format=%cs %s"),
         "top_committers_1y": git(root, "shortlog", "-sn", "--no-merges", "--since=1.year", "HEAD").splitlines()[:5],
     }
+    # トップレベルのディレクトリ（git 管理のファイルがあるものだけ）。README のディレクトリ構成の材料
+    top: dict[str, int] = {}
+    for f in git(root, "-c", "core.quotepath=off", "ls-files").splitlines():
+        if "/" in f:
+            d = f.split("/", 1)[0]
+            top[d] = top.get(d, 0) + 1
+    facts["top_level_dirs"] = sorted(top.items())
     lic = [n for n in ["LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING"] if (root / n).is_file()]
     facts["license"] = lic
     return facts
@@ -450,6 +457,8 @@ def render(f: dict) -> str:
           f"- 最終コミット: {g['last_commit'] or '不明'}",
           "- 直近1年のコミット数上位（問い合わせ先の候補。本人に確認してから書く）:"]
     L += [f"  - {c.strip()}" for c in g["top_committers_1y"]] or ["  - 不明"]
+    L += ["", "## トップレベルのディレクトリ（git 管理のファイル数。README のディレクトリ構成の材料）"]
+    L += [f"- {d}/（{n}）" for d, n in f.get("top_level_dirs", [])] or ["- なし"]
     L += ["", f"## ライセンス: {', '.join(f['license']) or 'ファイルなし'}"]
     return "\n".join(L)
 
