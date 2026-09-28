@@ -386,6 +386,9 @@ def main() -> int:
         for b in re.findall(r"`([\w./-]+)`", l):
             if "*" in b or "/" in b and b.split("/")[0] in {"feature", "fix", "hotfix", "release"} and b not in branches:
                 continue
+            # ファイル名（CLAUDE.md など）やコマンドはブランチ名ではない
+            if re.search(r"\.\w{1,5}$", b):
+                continue
             if re.match(r"^[\w./-]+$", b) and b not in branches and not b.startswith(("http", "npm", "git")):
                 errs.append(f"{i}行目: ブランチ `{b}` がリモートに無い（{', '.join(sorted(branches)[:8])}）")
     # 関連文書の列挙漏れ。役目を終えた資料（archive 等）は除く

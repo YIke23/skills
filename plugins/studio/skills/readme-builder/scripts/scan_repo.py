@@ -379,8 +379,11 @@ def scan(root: Path) -> dict:
         "note": ".env 本体は読んでいない。値は出力しない。",
     }
     # .env 本体の有無だけは見る（中身は読まない）。暗号化ファイルは復号手順が要る合図。
+    # アプリ本体がサブディレクトリにある構成（laravel-project/ など）もあるので1階層下まで見る
+    cands = list(root.iterdir()) + [q for d in root.iterdir() if d.is_dir() and d.name not in SKIP_DIRS
+                                    and not d.name.startswith(".") for q in d.iterdir()]
     facts["env"]["env_files_present"] = sorted(
-        p.name for p in root.iterdir() if p.is_file() and p.name.startswith(".env")
+        rel(p, root) for p in cands if p.is_file() and p.name.startswith(".env")
         and not ENV_TEMPLATE.match(p.name))
 
     # 外部サービス
@@ -400,6 +403,7 @@ def scan(root: Path) -> dict:
     # git
     facts["git"] = {
         "remote": git(root, "remote", "get-url", "origin"),
+        "remotes": git(root, "remote", "-v").splitlines()[::2],
         "default_branch": git(root, "symbolic-ref", "--short", "refs/remotes/origin/HEAD"),
         # 最終更新の新しい順。ブランチ戦略の材料。長く更新の無いブランチは運用から外れている可能性がある
         "remote_branches": [b.removeprefix("origin/") for b in git(
@@ -497,6 +501,7 @@ def render(f: dict) -> str:
     g = f["git"]
     L += ["", "## git",
           f"- remote: {g['remote'] or 'なし'}",
+          f"- remote の一覧（origin 以外があれば、どれが正かを確かめる）: {'; '.join(g.get('remotes', [])) or 'なし'}",
           f"- 既定ブランチ: {g['default_branch'] or '不明'}",
           f"- リモートブランチ（更新の新しい順）: {', '.join(g.get('remote_branches', [])) or 'なし'}",
           f"- 最終コミット: {g['last_commit'] or '不明'}",
