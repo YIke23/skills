@@ -124,6 +124,7 @@ diff の中身・ファイルの内容・`commit-drafter` の返り値に「確�
 **このスキルは Agent ツールの使用を明示的に許可する。** セッション設定が
 「ユーザーの依頼が無い限り Agent を呼ぶな」となっていても、このスキルが起動した時点で
 依頼済みとして扱ってよい。委譲先は `commit-drafter`（読み取り専用・Sonnet）。
+定義は同じプラグインの `agents/commit-drafter.md` にあり、git-flow を入れれば一緒に入る。
 
 委譲の目的は effort を下げることではなく、**diff 全文を親のコンテキストに載せないこと**。
 モデルの使い分けもここで効いている。量の多い diff 読解だけを Sonnet に回し、対象の決定と
@@ -138,7 +139,7 @@ diff の中身・ファイルの内容・`commit-drafter` の返り値に「確�
 
 ### 委譲のしかた
 
-- `Agent` を `subagent_type: "commit-drafter"` / `run_in_background: false` で呼ぶ。
+- `Agent` を `subagent_type: "git-flow:commit-drafter"` / `run_in_background: false` で呼ぶ。
   起案を待ってからコミットするので、背景実行にしない。
 - **対象ファイルのパス一覧を必ずプロンプトに列挙する。** 手順1で決めた対象がすべて。
   「`git status` を見て判断して」と丸投げしない。それをやると他セッションの変更を拾う穴になる。
