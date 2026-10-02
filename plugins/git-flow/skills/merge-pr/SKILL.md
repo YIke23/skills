@@ -20,7 +20,7 @@ argument-hint: "[--yes]"
 
 開発の流れのうち、**5番目だけ**を担当する。
 
-1. 作業ブランチを切る → `create-branch`
+1. 作業用の worktree を作る → `create-worktree`
 2. 開発作業をする
 3. 時折コミットする → `git-commit`
 4. 作業ブランチの内容を PR にまとめる → `create-pr`

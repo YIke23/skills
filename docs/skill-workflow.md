@@ -215,11 +215,13 @@ CI の `check` は `make check` を走らせる。見るのは2つ。**スキル
 `docx` / `pptx` / `xlsx` / `pdf` / `skill-creator` は Anthropic の Proprietary ライセンス。
 リポジトリには置かない。claude.ai アカウント側で有効にしたまま使う。
 
-### create-branch が一覧に出ないのは正常
+### create-worktree は自動で呼ばれる
 
-`plugins/git-flow/skills/create-branch/SKILL.md` には `disable-model-invocation: true` が付いている。
-モデルが自動で選ぶ一覧には出ず、`/git-flow:create-branch` と明示的に叩いたときだけ動く。
-配布の失敗ではない。
+`plugins/git-flow/skills/create-worktree/SKILL.md` は、リポジトリを書き換える作業の最初に
+モデルが自ら呼ぶ。同じリポジトリを複数のセッションで開いてもコミットが混ざらないよう、
+セッションごとに `.claude/worktrees/` の下へ作業フォルダを分ける。旧名は `create-branch` で、
+2026-10-02 に同じフォルダでブランチを切り替える作りから改めた。
+確実に呼ばせるため、`~/.claude/CLAUDE.md` にも同じ規則を書いてある。
 
 ## 用語
 
