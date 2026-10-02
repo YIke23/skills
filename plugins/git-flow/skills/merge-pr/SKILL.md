@@ -55,7 +55,7 @@ argument-hint: "[--yes]"
   しかも聞かれた側は「さっき承認したはずでは」となる。
 - **ブランチが消えたかは、ref の有無で確かめる。** `[gone]` の表示に頼らない。
   `--delete-branch` が黙ってローカルを消し損ねることがあり、そのとき `[gone]` にも
-  ならないケースを実測している（手順8）。
+  ならないケースを実測している（→「`/clean_gone` に任せない理由」）。
 
 ## 自動承認モード（`--yes`）
 
@@ -119,7 +119,7 @@ gh pr checks <番号> -R <owner/repo>
 
 | 見るもの | 止まる値 | 意味 |
 |---|---|---|
-| `state` | `MERGED` / `CLOSED` | 既に終わっている。**二重にマージしない**。`MERGED` なら手順7の後始末だけ行う |
+| `state` | `MERGED` / `CLOSED` | 既に終わっている。**二重にマージしない**。`MERGED` なら手順7・8の後始末だけ行う |
 | `isDraft` | `true` | draft のまま。ready にするのは人の判断 |
 | `mergeable` | `CONFLICTING` | コンフリクト。解消はこのスキルの担当外 |
 | `mergeStateStatus` | `BLOCKED` | 必須レビュー・必須チェックが未達 |
@@ -209,15 +209,49 @@ gh pr view <番号> -R <owner/repo> --json state,mergedAt,mergeCommit \
 実際には auto-merge が予約されただけのことがある（下の「落とし穴」）。その場合は
 `state` が `OPEN` のまま返るので、予約された旨をユーザーに伝えて終わる。掃除はしない。
 
-### 7. ローカルを後始末し、残っていればブランチを消す（承認は手順5で取れている）
+### 7. worktree から出て、外す（承認は手順5で取れている）
 
 `MERGED` を確認できた後にだけ実行する。**ここで改めて承認は取らない。**
+作業ブランチは `create-worktree` が作った worktree（`<ルート>/.claude/worktrees/…`）に
+checkout されているのが普通で、worktree を外さないとブランチを消せない。
+
+1. **その worktree を探す。**
+
+   ```bash
+   git worktree list --porcelain | awk -v b="branch refs/heads/<作業ブランチ>" \
+     '/^worktree /{w=substr($0,10)} $0==b{print w}'
+   ```
+
+   何も出なければ worktree は無い。2〜4を飛ばして手順8へ
+2. **外してよいかを確かめる。** 次の両方を満たさなければ外さず、パスと理由を報告して
+   手順8へ進む（ブランチも消せないので残る）。
+   - `git -C <worktree> status --porcelain` が空。未コミットの変更や未追跡ファイルがあると
+     失われる。`.env` 系のコピーなど git が無視しているファイルは対象外で、消えてよい
+   - `git -C <worktree> rev-parse HEAD` が `headRefOid` と一致する。一致しなければ、
+     push していないコミットが載っている
+3. **セッションがその worktree の中にいれば、先に出る。** 自分の足場を消すことになるため。
+   `ExitWorktree` を `action: "keep"` で呼ぶ。`create-worktree` は `git worktree add` で
+   作ってから `path` で入るので、`ExitWorktree` は元のフォルダへ戻るだけで、削除はしない。
+   中にいないなら何もしない
+4. **元のフォルダから外す。**
+
+   ```bash
+   git worktree remove <worktree のパス>
+   ```
+
+   **`--force` を付けない。** 2で確かめた状態から変わっていれば git が拒むので、その場合は
+   消さずに報告する
+
+### 8. ブランチを消し、元のフォルダを追いつかせる
 
 ```bash
 git fetch --prune                        # 消えた origin/<branch> の追跡参照を落とす
-git switch <base>                        # マージ済みブランチから降りる
-git pull --ff-only                       # base をマージ後の状態に追いつかせる
 ```
+
+**元のフォルダのブランチは切り替えない。** そこは他のセッションも開いている作業フォルダで、
+`git switch` すると相手の足場まで動く。カレントが base で、`git status --porcelain` が
+空のときだけ `git pull --ff-only` で追いつかせる。どちらかが外れていれば pull せずに報告する
+（`create-worktree` は origin から worktree を作るので、追いつかせなくても次の作業は困らない）。
 
 **`--delete-branch` が効いたかは、目視ではなく ref の有無で確かめる。**
 
@@ -242,26 +276,24 @@ git show-ref --verify --quiet refs/heads/<作業ブランチ> && echo "残って
    「リモートに入りきったものをローカルから消すだけ」になるので安全に撃てる。
    **一致しなければ消さない。** push していないコミットが載っている可能性があるので、
    その事実を報告してユーザーに返す
-3. `cannot delete branch 'X' used by worktree at ...` で失敗したら、worktree が
-   掴んでいる。→ 手順8
+3. `cannot delete branch 'X' used by worktree at ...` で失敗したら、手順7で外せなかった
+   worktree が残っている。消さずにそのパスを報告する
 
 最後に確認して報告する。
 
 ```bash
 git branch -vv
+git worktree list
 ```
 
 `-D` は不可逆なので、2の一致確認を飛ばさない。ここを守れば、承認を追加で取らずに
 消し切れる。
 
-### 8. worktree が掴んでいるものは `/clean_gone` へ
+### `/clean_gone` に任せない理由
 
-手順7の削除が `used by worktree at ...` で失敗したら、worktree ごと片付ける必要がある。
-`git worktree remove --force` を自前で書かず、`/clean_gone`（`commit-commands` プラグイン、
-Anthropic 公式）に渡す。worktree の除去からブランチ削除までを1回で行う。
-
-**ただし `/clean_gone` が拾うのは `[gone]`（upstream が消えた）ブランチだけ。**
-手順7で残ったブランチがそこに出てくるとは限らない。実測した例。
+`/clean_gone`（`commit-commands` プラグイン）が拾うのは `[gone]`（upstream が消えた）
+ブランチだけ。`gh pr merge --delete-branch` のあとに残ったブランチは、そこに出てこない
+ことがある。実測した例。
 
 | 見たもの | 値 |
 |---|---|
@@ -271,24 +303,12 @@ Anthropic 公式）に渡す。worktree の除去からブランチ削除まで�
 | `git branch -vv \| grep ': gone]'` | **ヒットしない** |
 
 （git 2.50.1 / Apple Git-155 で観測）こうなると `/clean_gone` は「掃除するものはありません」
-と返して終わり、そのブランチは黙って残り続ける。**手順7が `[gone]` ではなく ref の有無で
-判定しているのはこのため。** 掃除を丸ごと `/clean_gone` に投げると、この形の残骸を
-取りこぼす。
-
-`/clean_gone` に渡すときの前提は2つ。どちらも `clean_gone` 側は面倒を見ない（実測で確認）。
-
-1. **`git fetch --prune` を先に済ませる。** `clean_gone` は fetch しない。GitHub が
-   マージ時にリモートを消しただけの段階では、remote-tracking ref がローカルに残っており
-   `[gone]` にならない
-2. **`[gone]` のブランチに立ったまま渡さない。** カレントブランチは削除できず
-   `cannot delete branch 'X' used by worktree at ...` で失敗する。エラーは表示され、
-   他のブランチの処理は続くので壊れはしないが、そのブランチだけ残る
-
-手順7で `fetch --prune` と `switch <base>` を済ませているのは、この2つのためでもある。
+と返して終わり、そのブランチと worktree は黙って残り続ける。**手順7・8が `[gone]` ではなく
+ref と worktree の一覧で判定しているのはこのため。**
 
 **Web UI や auto-merge でマージされた分は、このスキルを通らない。** そちらは定期的に
-`/clean_gone` を回すのが担当。ただし単独で回すときは、**上の前提1が満たされていない**
-（誰も prune していない）ことが多い。先に `git fetch --prune` を促すこと。
+`/clean_gone` を回すのが担当。単独で回すときは、先に `git fetch --prune` を済ませること
+（`clean_gone` は fetch しない）。
 
 ## 落とし穴
 
@@ -306,20 +326,21 @@ Anthropic 公式）に渡す。worktree の除去からブランチ削除まで�
 git worktree list | grep "\[<作業ブランチ>\]"
 ```
 
-該当があれば、手順5でそのパスを「消えるもの」に含めて伝え、削除は手順8で `/clean_gone` に任せる。
+該当があれば、手順5でそのパスを「消えるもの」に含めて伝え、手順7で外す。
 
 **squash マージすると `git branch -d` は効かない。** squash は base に別のコミットとして
 入るため、git は元ブランチをマージ済みと認識しない。自前で掃除しようとして `-d` を
-使うと1本も消えず、`-D` は不可逆。だから手順7は、`-d` が拒んだときだけ `-D` に進み、
+使うと1本も消えず、`-D` は不可逆。だから手順8は、`-d` が拒んだときだけ `-D` に進み、
 その手前で `headRefOid` とローカルの先端の一致を確かめる。一致していれば、消えるのは
 base に入りきったものだけになる。
 
 **`deleteBranchOnMerge: true` でもローカルは残る。** リポジトリ設定が消すのはリモートだけ。
 「設定を入れたから掃除は要らない」は成り立たない。
 
-**カレントブランチをマージすると、その場で足場が消える。** `gh` は base へ切り替えてから
-消すが、`git status` で未コミットの変更が残っていると切り替えに失敗することがある。
-マージ前に作業ツリーをクリーンにしておく。
+**worktree の中からマージすると、`gh` はローカルの後始末に失敗する。** `--delete-branch` は
+base へ切り替えてからローカルを消そうとするが、base は元のフォルダに checkout されていて
+worktree からは切り替えられない。マージとリモートの削除は済むので、`gh` が失敗を返しても
+手順6の `state` 確認で判断し、ローカルは手順7・8で片付ける。
 
 ## やってはいけないこと
 
@@ -327,7 +348,9 @@ base に入りきったものだけになる。
   付いているときだけ。それでも手順2・手順3では止まる）
 - **`--admin` でチェックを迂回する**
 - **`state` を確認せずに掃除を始める**
-- **一致確認をせずに `git branch -D` を撃つ**（手順7の2）
+- **一致確認をせずに `git branch -D` を撃つ**（手順8の2）
+- **`git worktree remove --force` で外す。** 未コミットの変更ごと消える
+- **元のフォルダで `git switch` する。** 他のセッションの足場が動く
 - **マージのあとで、ブランチ削除の承認を別に取る。** 手順5の承認に含まれている
 - **掃除を `/clean_gone` に丸投げして終わりにする。** `[gone]` にならない残骸を取りこぼす
 - **本番リリース PR をマージする。** 手順3で止まる
