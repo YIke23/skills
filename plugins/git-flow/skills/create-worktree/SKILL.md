@@ -61,6 +61,20 @@ allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/create_worktree.sh *), EnterWork
    - 終了コード 3: すでに worktree の中。何もせず作業に進む
    - 終了コード 1: エラー内容をそのまま伝えて止まる。元の作業フォルダで編集を始めない
 4. **報告する。** ブランチ名・起点・worktree のパス・コピーした未追跡ファイルを1〜3行で。
+   続けて、その worktree を Cursor で開くコマンドを `bash` のコードブロック1つで添える。
+   パスは `WORKTREE=` の値をそのまま使い、空白に備えて引用符で囲む。
+   ````markdown
+   ```bash
+   cursor "/path/to/repo/.claude/worktrees/feature-xxx"
+   ```
+   ````
+   ユーザーの目の前で作業が別フォルダへ移るので、差分を目で追うにはエディタも同じ場所を
+   開く必要がある。一方、こちらから `cursor` を実行して自動で開くことはしない。worktree は
+   書き換える作業のたびに作られるので、自動で開くと見る気のないときにも Cursor の窓が
+   増え続け、フォーカスも奪う。デスクトップアプリでは `bash` のブロックに Run ボタンが付き、
+   見たいときだけ1クリックで開ける。ユーザーが「開いて」と頼んだときだけ実行する。
+   `cursor` コマンドが無い環境（`command -v cursor` が空）なら `open -a Cursor "<パス>"` を示す。
+   終了コード 3（すでに worktree の中）のときは添えない。
 
 ## スクリプトがやること
 
