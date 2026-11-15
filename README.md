@@ -88,7 +88,6 @@ claude.ai アカウントへの入れ方と、初回に足しておく設定は�
 |---|---|---|
 | [スキル運用ガイド](docs/skill-workflow.md) | 作る・直す・配る・新しい Mac に入れる手順と、main 保護などの決まりごと | スキルを作る・直す・配るとき |
 | [スキル配布パイプライン](docs/skill-distribution-pipeline.md) | 今のレイアウトと配布方式に至った経緯と設計判断 | 構成や配布方式を変えたくなったとき、同じ症状が再発したとき |
-| [meeting-deck 先行事例調査](docs/meeting-deck-prior-art.md) | 会議用の単一 HTML 資料スキルの既存調査 | meeting-deck を作り直す・同種を探すとき |
 | [merge-pr 先行事例調査](docs/merge-pr-prior-art.md) | PR のマージと後始末のスキルの既存調査 | merge-pr を作り直す・同種を探すとき |
 | [readme-builder 先行事例調査](docs/readme-builder-prior-art.md) | 引き継ぎ向け README スキルの既存調査 | readme-builder を作り直す・同種を探すとき |
 | [skill-inventory 先行事例調査](docs/skill-inventory-prior-art.md) | スキル一覧と GitHub との差分を出すスキルの既存調査 | skill-inventory を作り直す・同種を探すとき |
