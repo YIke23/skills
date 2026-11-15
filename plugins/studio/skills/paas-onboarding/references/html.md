@@ -8,7 +8,7 @@
 `python3 ${CLAUDE_SKILL_DIR}/scripts/check_palette.py ${CLAUDE_SKILL_DIR}/assets/base.css`
 で測り直してから変える。
 
-**`eli15` や `meeting-deck` の CSS を流用しない。** あちらは Warm Paper で、
+**`eli15` の CSS を流用しない。** あちらは Warm Paper で、
 長い文章を通して読ませるための組版。導入ガイドは読み物ではなく作業台で、
 コンソールとエディタを行き来しながら「今どの手順にいるか」を何度も探し直す
 読まれ方をする。淡い地の上に白いカードを置くのは、手順の1つ1つが独立した面になり、
