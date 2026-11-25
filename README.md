@@ -1,6 +1,6 @@
 # skills
 
-YIke の自作 Claude スキルを1箇所で管理し、2台の Mac と2つの claude.ai アカウントへ配るリポジトリ。
+YIke の自作 Claude スキルを1箇所で管理するリポジトリ。
 GitHub のこのリポジトリがそのまま marketplace（`yike-skills`）になり、構成は
 [anthropics/claude-plugins-official](https://github.com/anthropics/claude-plugins-official) に合わせて
 プラグインごとに `plugins/<plugin>/` で束ねている。
